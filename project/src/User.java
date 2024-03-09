@@ -10,7 +10,8 @@ public class User implements Serializable {
     public Map<String, Room> rooms;
     private Room actualRoom = null;
     private int port;
-    private Socket socket;
+    private Socket sendingSocket;
+    private Socket listeningSocket;
 
     public User(String username, int port) throws IOException {
         this.userId = UUID.randomUUID();
@@ -19,13 +20,14 @@ public class User implements Serializable {
         this.port = port;
         this.peers = new HashSet<>();
     }
-    public User(String username, int port, Socket socket) {
-        this.userId = UUID.randomUUID();
+    public User(String username,UUID userId, int port, Socket sendingSocket, Socket listeningSocket) {
+        this.userId = userId;
         this.username = username;
         this.rooms = new HashMap<>();
         this.port = port;
         this.peers = new HashSet<>();
-        this.socket = socket;
+        this.sendingSocket = sendingSocket;
+        this.listeningSocket = listeningSocket;
     }
 
     public void createRoom(String name){
@@ -84,9 +86,31 @@ public class User implements Serializable {
     public int getPort() {
         return port;
     }
+    public void setPort(int port) {
+        this.port = port;
+    }
 
+    public Socket getSendingSocket() {
+        return sendingSocket;
+    }
+    public Socket getListeningSocket() {
+        return listeningSocket;
+    }
 
-    public Socket getSocket() {
-        return socket;
+    public void removePeer(Socket socket) {
+        User disconnectedUser = this.peers.stream()
+                .filter(user -> user.getListeningSocket().equals(socket))
+                .findFirst()
+                .orElse(null);
+
+        if (disconnectedUser != null) {
+            System.out.println("\n" + Color.RESET + disconnectedUser.getUsername() + Color.RED + " DISCONNECT FROM THE NETWORK" + Color.RESET);
+            this.peers.remove(disconnectedUser);
+        }
+    }
+
+    public void addPeer(User peer) {
+        System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " CONNECT TO THE NETWORK" + Color.RESET);
+        this.peers.add(peer);
     }
 }
