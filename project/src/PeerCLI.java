@@ -11,15 +11,15 @@ public class PeerCLI {
 
         System.out.print(Color.BLUE + "Enter your username: " + Color.RESET);
         String username = scanner.nextLine();
-        if (username.isEmpty()) {
-            System.out.println(Color.RED + "Username cannot be empty" + Color.RESET);
-            return;
+        while (username.isEmpty()) {
+            System.out.println(Color.RED + "Username cannot be empty, please insert a valid username" + Color.RESET);
+            username = scanner.nextLine();
         }
         System.out.print(Color.BLUE + "Enter your port (must be between 1024 and 49151): " + Color.RESET);
         int PORT = scanner.nextInt();
-        if(PORT < 1024 || PORT > 49151){
+        while(PORT < 1024 || PORT > 49151){
             System.out.println(Color.RED + "Port must be between 1024 and 49151" + Color.RESET);
-            return;
+            PORT = scanner.nextInt();
         }
         User user = new User(username, PORT);
         user.startPeerDiscovery();

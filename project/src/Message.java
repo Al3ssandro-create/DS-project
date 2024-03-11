@@ -29,6 +29,6 @@ public class Message implements Serializable {
     }
 
     public void setSequenceNumber(int sequenceNumber) {
-
+        this.sequenceNumber = sequenceNumber;
     }
 }

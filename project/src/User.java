@@ -31,8 +31,11 @@ public class User implements Serializable {
     }
 
     public void createRoom(String name){
-        Room room = new Room(name, new HashSet<>(List.of(this)));
+        System.out.println(Color.BLUE + "Select the partecipants of the room:\n" + Color.RESET);
+        Set<User> selected = new HashSet<>(selectPeers());
+        Room room = new Room(name, new HashSet<>(selected));
         rooms.put(room.getRoomName(), room);
+        //send creation room message to all partecipant
     }
 
     public void listRooms(){
@@ -112,5 +115,32 @@ public class User implements Serializable {
     public void addPeer(User peer) {
         System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " CONNECT TO THE NETWORK" + Color.RESET);
         this.peers.add(peer);
+    }
+
+    private Set<User> selectPeers(){
+        Scanner scan = new Scanner(System.in);
+        Set<User> selected = new HashSet<>();
+        for(User peer:peers)
+            System.out.println(Color.GREEN + peer.getUsername() + "\n" + Color.RESET);
+        System.out.println(Color.BLUE + "Write the username(s) of the client(s) to add separated by a comma.\n" + Color.RESET);
+        String users = scan.nextLine();
+        while(users.isEmpty()){
+            System.out.println(Color.BLUE + "The usernames list cannot be empty.\n" + Color.RESET);
+            users = scan.nextLine();
+        }
+        Set<String> cleanUsers = new HashSet<>(spliceString(users));
+        for(User peer:peers){
+            if(cleanUsers.contains(peer.getUsername()))
+                selected.add(peer);
+        }
+        return selected;
+    }
+
+    private Set<String> spliceString(String fullString){
+        String[] wordsArray = fullString.split(",");
+        Set<String> spliced = new HashSet<>();
+        for(String word:wordsArray)
+            spliced.add(word.trim());
+        return spliced;
     }
 }

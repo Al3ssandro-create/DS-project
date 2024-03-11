@@ -6,6 +6,7 @@ public class Room {
     private final Set<User> participants;
     private List<Message> messages;
     private Map<User, Integer> userSequenceNumbers;
+    
     public Room(String name, Set<User> participants) {
         this.roomId = UUID.randomUUID();
         this.name = name;
