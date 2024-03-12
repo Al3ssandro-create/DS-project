@@ -1,4 +1,7 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.util.*;
@@ -115,6 +118,30 @@ public class User implements Serializable {
     public void addPeer(User peer) {
         System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " CONNECT TO THE NETWORK" + Color.RESET);
         this.peers.add(peer);
+    }
+
+    public void receiveMessages(){
+        new Thread(()->{
+            try{
+                while(true){
+                    ObjectInputStream in = new ObjectInputStream(listeningSocket.getInputStream());
+                    Message msg = (Message) in.readObject();
+                    if(msg.getRoom() != null)
+                        addRoom(msg);
+                    // else handling of messages of chat, maybe will do it directly in the room
+                }
+            }catch(IOException e){
+                e.printStackTrace();
+            }catch(ClassNotFoundException e){
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    //this method is called from the method that reads the received messages if !message.getRoom().isNull()
+    public void addRoom(Message message){
+        Room room = message.getRoom();
+        rooms.put(room.getName(), room);
     }
 
     private Set<User> selectPeers(){
