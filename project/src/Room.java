@@ -1,21 +1,33 @@
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.*;
 
-public class Room {
+public class Room implements Serializable{
     private final UUID roomId;
     private final String name;
     private final Set<User> participants;
     private List<Message> messages;
     private Map<User, Integer> userSequenceNumbers;
+    
     public Room(String name, Set<User> participants) {
         this.roomId = UUID.randomUUID();
         this.name = name;
         this.participants = new HashSet<>(participants);
         this.messages = new ArrayList<>();
         this.userSequenceNumbers = new HashMap<>();
+        
         for (User participant : participants) {
-            userSequenceNumbers.put(participant, 0);
+            try{
+                userSequenceNumbers.put(participant, 0);
+                sendRoom(this, participant);
+            }catch(IOException e){
+                e.printStackTrace();
+            }
         }
+        
     }
+
     public String getRoomName() {
         return name;
     }
@@ -36,5 +48,11 @@ public class Room {
         User sender = message.getSender();
         int sequenceNumber = message.getSequenceNumber();
         userSequenceNumbers.put(sender, sequenceNumber);
+    }
+
+    private void sendRoom(Room room, User user) throws IOException{
+            PrintWriter out = new PrintWriter(user.getListeningSocket().getOutputStream(), true);
+            out.println(new Message(this));
+            return;
     }
 }
