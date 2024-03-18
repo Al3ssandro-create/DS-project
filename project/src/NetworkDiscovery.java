@@ -1,133 +1,78 @@
+import Color.Color;
+
 import java.io.*;
 import java.net.*;
+import java.util.Iterator;
 import java.util.UUID;
 
 public class NetworkDiscovery {
-    private User user;
-    private static final String SUBNET = "10.1.10.";
+    private final User user;
     public NetworkDiscovery(User user) {
         this.user = user;
     }
     private ServerSocket serverSocket;
-    public void discoverPeers() {
-        final int MAX_RETRIES = 5; // Maximum number of retries
-        final int RETRY_WAIT_TIME = 5000; // Wait time between retries in milliseconds
-
-        for (int i = 0; i < MAX_RETRIES; i++) {
-            try {
-                // Create a server socket that listens for incoming connections on a specific port
-                serverSocket = new ServerSocket(user.getPort());
-
-                // Start a new thread that handles incoming connections
-                new Thread(() -> {
-                    while (true) {
-                        try {
-                            Socket socket = serverSocket.accept();
-                            new Thread(() -> {
-                                try {
-                                    handleIncomingConnection(socket);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }).start();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-
-                // Send a discovery message to all other ports
-                /** for (int port = 1024; port <= 49151; port++) {
-                   if (port == user.getPort()) {
-                        continue;
-                    }
-
-                    try {
-                        Socket socket = new Socket("localhost", port);
-                        sendDiscoveryMessage(socket);
-                        socket.close();
-                    } catch (IOException e) {
-                        // Ignore exceptions, as they are expected when a connection attempt fails
-                    }
-                }
-                 **/
-                try {
-                    InetAddress subnetAddress = InetAddress.getByName(SUBNET);
-                    for (int j = 1; j < 255; j++) {
-                        InetAddress address = InetAddress.getByName(SUBNET + j);
-                        if (!address.equals(subnetAddress) && address.isReachable(100)) {
-                            // Send discovery message to potential peer
-                            Socket socket = new Socket(address, 8888);
-                            sendDiscoveryMessage(socket);
-                            socket.close();
-                        }
-                    }
-                } catch (IOException e) {
-                    // Ignore exceptions, as they are expected when a connection attempt fails
-                }
-
-                // If the code reaches this point without throwing an exception, break the loop
-                break;
-            } catch (IOException e) {
-                // Handle exception and restart the method
-                System.out.println("Connection crashed, retrying discovery...");
-
-                // If this was the last retry, close the client
-                if (i == MAX_RETRIES - 1) {
-                    System.out.println("Failed to reconnect after " + MAX_RETRIES + " attempts, closing client.");
-                    System.exit(1);
-                }
-
-                // Wait before retrying
-                try {
-                    Thread.sleep(RETRY_WAIT_TIME);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
 
     private void handleIncomingConnection(Socket socket) throws IOException {
-        new Thread(() -> {
+            Socket peerSocket;
+            User handlingUser = null;
             try {
                 while (true) {
-                    String responseMessage = getResponseMessage(socket);
-
-                    if (responseMessage != null && (responseMessage.startsWith("DISCOVERY") || responseMessage.startsWith("RESPONSE_DISCOVERY"))) {
+                    if(handlingUser != null && !handlingUser.checkHeartbeat()) {
+                        System.out.println(Color.RED + "Peer " + handlingUser.getUsername() + " is not responding, removing from peers" + Color.RESET);
+                        user.removePeer(handlingUser.getUserId());
+                        break;
+                    }
+                    String responseMessage = getMessage(socket);
+                    if (responseMessage != null && (responseMessage.startsWith("DISCOVERY") || responseMessage.startsWith("RESPONSE_DISCOVERY") || responseMessage.startsWith("PEER"))){
                         String[] parts = responseMessage.split(" ");
                         String peerUsername = parts[1];
                         UUID peerId = UUID.fromString(parts[2]);
                         int peerPort = Integer.parseInt(parts[3]);
                         String peerAddress = parts[4];
 
+                        if(!userExists(peerId) && !responseMessage.startsWith("PEER")) {
 
-                        Socket peerSocket = new Socket(peerAddress, peerPort);
-                        User peer = new User(peerUsername, peerId, peerPort, peerSocket, socket );
-                        user.addPeer(peer);
+                            if (responseMessage.startsWith("DISCOVERY")) {
+                                String responseBackMessage = "RESPONSE_DISCOVERY " + this.user.getUsername() + " " + this.user.getUserId().toString() + " " + serverSocket.getLocalPort() + " " + serverSocket.getInetAddress().getHostAddress();
+                                sendMessage(socket, responseBackMessage);
+                            }
 
-
-                        if(responseMessage.startsWith("DISCOVERY")) {
-                            PrintWriter out = new PrintWriter(peer.getSendingSocket().getOutputStream(), true);
-                            String responseBackMessage = "RESPONSE_DISCOVERY " + this.user.getUsername() + " " + this.user.getUserId().toString() + " " + serverSocket.getLocalPort() + " " + serverSocket.getInetAddress().getHostAddress();
-                            out.println(responseBackMessage);
+                            handlingUser = user.addPeer(peerUsername, peerId, peerPort, socket);
+                            for (User peerUser : user.listPeers()) {
+                                if (!peerUser.getUserId().equals(peerId) &&  !responseMessage.startsWith("PEER")) {
+                                    sendMessageToUser(peerUser.getUserId(), "PEER " + peerUsername + " " + peerId + " " + peerPort + " " + peerAddress);
+                                }
+                            }
+                        }else if(responseMessage.startsWith("PEER")){
+                            user.startConnection(peerAddress, peerPort);
                         }
+                    }else if(responseMessage != null && responseMessage.startsWith("HEARTBEAT") && handlingUser != null){
+                        handlingUser.updateHeartbeat();
                     }
                 }
             } catch (IOException e) {
-                this.user.removePeer(socket);
+                //e.printStackTrace();
             }
-        }).start();
     }
-    public void sendMessageToUser(String username, String message) throws IOException {
+
+    private boolean userExists(UUID peerId) {
         for (User user : this.user.listPeers()) {
-            if (user.getUsername().equals(username)) {
-                PrintWriter out = new PrintWriter(user.getSendingSocket().getOutputStream(), true);
+            if (user.getUserId().equals(peerId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void sendMessageToUser(UUID userId, String message) throws IOException {
+        for (User user : this.user.listPeers()) {
+            if (user.getUserId().equals(userId)) {
+                PrintWriter out = new PrintWriter(user.getListeningSocket().getOutputStream(), true);
                 out.println(message);
                 return;
             }
         }
-        System.out.println("User not found: " + username);
+        System.out.println("User not found" );
     }
 
     private void sendDiscoveryMessage(Socket socket) throws IOException {
@@ -136,8 +81,87 @@ public class NetworkDiscovery {
         out.println(discoveryMessage);
     }
 
-    private String getResponseMessage(Socket socket) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        return in.readLine();
+    private String getMessage(Socket socket)  {
+        BufferedReader in;
+        try {
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            return in.readLine();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private void sendMessage(Socket socket, String message) throws IOException{
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+        out.println(message);
+    }
+
+    public void connectToPeer(String ipPeer, int portPeer) {
+        int MAX_RETRIES = 5;
+        for(int i = 0; i < MAX_RETRIES; i++) {
+            try {
+                Socket socket = new Socket(ipPeer, portPeer);
+                sendDiscoveryMessage(socket);
+                new Thread(() -> {
+                    try {
+                        handleIncomingConnection(socket);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+                break;
+            } catch (IOException e) {
+                System.out.println(Color.RED + "Connection crashed, retrying discovery..." + Color.RESET);
+                try {
+                    int RETRY_WAIT_TIME = 1000;
+                    Thread.sleep(RETRY_WAIT_TIME); // introduce delay before next retry
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+                if (i == MAX_RETRIES - 1) {
+                    System.out.println(Color.RED + "Failed to reconnect after " + MAX_RETRIES + " attempts, closing client." + Color.RESET);
+                    System.exit(1);
+                }
+            }
+        }
+    }
+    public void startListening() {
+        try {
+            serverSocket = new ServerSocket(user.getPort());
+            System.out.println(Color.GREEN + "Your IP is: " + InetAddress.getLocalHost().getHostAddress() + " Listening for incoming connections on port " + user.getPort() + Color.RESET);
+            // Start a new thread that handles incoming connections
+                while (true) {
+                    try {
+                        Socket socket = serverSocket.accept();
+                        new Thread(() -> {
+                            try {
+                                handleIncomingConnection(socket);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }).start();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+        } catch (IOException e) {
+            System.out.println(Color.RED + "Failed to start listening on port " + user.getPort() +Color.RESET);
+            System.exit(1);
+        }
+    }
+
+    public void startHeartbeat(Socket peerSocket) {
+        new Thread(() -> {
+            while (true) {
+                try {
+                    PrintWriter out = new PrintWriter(peerSocket.getOutputStream(), true);
+                    out.println("HEARTBEAT " + user.getUserId());
+                    int HEARTBEAT_INTERVAL = 1000;
+                    Thread.sleep(HEARTBEAT_INTERVAL);
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 }
