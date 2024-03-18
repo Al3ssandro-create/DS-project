@@ -6,7 +6,7 @@ import java.util.*;
 public class PeerCLI {
     private int PORT;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
         System.out.print(Color.BLUE + "Enter your username: " + Color.RESET);
@@ -17,13 +17,28 @@ public class PeerCLI {
         }
         System.out.print(Color.BLUE + "Enter your port (must be between 1024 and 49151): " + Color.RESET);
         int PORT = scanner.nextInt();
+        scanner.nextLine();
         if(PORT < 1024 || PORT > 49151){
             System.out.println(Color.RED + "Port must be between 1024 and 49151" + Color.RESET);
             return;
         }
         User user = new User(username, PORT);
-        user.startPeerDiscovery();
-
+        System.out.println(Color.BLUE + "Do you already know someone in the network? (y/n)" + Color.RESET);
+        boolean loop = true;
+        while(loop) {
+            loop = false;
+            String answer = scanner.nextLine();
+            if (answer.equals("y") || answer.equals("Y") || answer.equals("yes") || answer.equals("Yes")) {
+                System.out.println(Color.BLUE + "Enter the ip of a peer to connect to: " + Color.RESET);
+                String ipPeer = scanner.nextLine();
+                System.out.println(Color.BLUE + "Enter the port of a peer to connect to: " + Color.RESET);
+                int portPeer = scanner.nextInt();
+                user.startConnection(ipPeer, portPeer);
+            }else if(!answer.equals("n") && !answer.equals("N") && !answer.equals("no") && !answer.equals("No")) {
+                System.out.println(Color.RED + "Invalid choice. Please enter y or n." + Color.RESET);
+                loop = true;
+            }
+        }
         while (true) {
             System.out.println(Color.BLUE + "1) Create a new Room\n2) See the list of all your rooms\n3) See the chat in a particular room\n4) List all peers\n5) Exit" + Color.RESET);
             System.out.print(Color.BLUE + "Enter your choice: " + Color.RESET);
@@ -77,6 +92,9 @@ public class PeerCLI {
                     break;
                 case 4:
                     System.out.println(Color.GREEN);
+                    if(user.listPeers().isEmpty()){
+                        System.out.println(Color.RED + "No peers found" + Color.RESET);
+                    }
                     for(User peer: user.listPeers()){
                         System.out.println(Color.GREEN + peer.getUsername() + " on port: "+ peer.getPort() +"\n" + Color.RESET);
                     }
