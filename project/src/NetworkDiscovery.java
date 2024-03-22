@@ -2,6 +2,7 @@ import Color.Color;
 
 import java.io.*;
 import java.net.*;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.UUID;
 
@@ -128,7 +129,27 @@ public class NetworkDiscovery {
     public void startListening() {
         try {
             serverSocket = new ServerSocket(user.getPort());
-            System.out.println(Color.GREEN + "Your IP is: " + InetAddress.getLocalHost().getHostAddress() + " Listening for incoming connections on port " + user.getPort() + Color.RESET);
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+
+                // Ignore loopback and inactive interfaces
+                if (iface.isLoopback() || !iface.isUp())
+                    continue;
+
+                // Get the addresses for this interface
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+
+                    // Print only IPv4 addresses (IPv6 can be handled similarly if needed)
+                    if (addr instanceof Inet4Address) {
+                        System.out.println(Color.GREEN + "Your IP is: " + addr.getHostAddress() +
+                                " Listening for incoming connections on port " + user.getPort() + Color.RESET);
+                    }
+                }
+            }
+            //System.out.println(Color.GREEN + "Your IP is: " + InetAddress.getLocalHost().getHostAddress() + " Listening for incoming connections on port " + user.getPort() + Color.RESET);
             // Start a new thread that handles incoming connections
                 while (true) {
                     try {
