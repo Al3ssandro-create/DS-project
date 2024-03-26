@@ -4,17 +4,19 @@ import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
 
 public class NetworkDiscovery {
     private final User user;
+    private ServerSocket serverSocket;
+    private Map<String, Socket> socketPeers;
+
     public NetworkDiscovery(User user) {
         this.user = user;
     }
-    private ServerSocket serverSocket;
 
     private void handleIncomingConnection(Socket socket) throws IOException {
-            Socket peerSocket;
             User handlingUser = null;
             try {
                 while (true) {
@@ -52,7 +54,7 @@ public class NetworkDiscovery {
                     }
                 }
             } catch (IOException e) {
-                //e.printStackTrace();
+                e.printStackTrace();
             }
     }
 
@@ -126,6 +128,7 @@ public class NetworkDiscovery {
             }
         }
     }
+    
     public void startListening() {
         try {
             serverSocket = new ServerSocket(user.getPort());
@@ -184,5 +187,15 @@ public class NetworkDiscovery {
                 }
             }
         }).start();
+    }
+
+    public void sendRoom(Room room, Socket socket){
+        Message roomMessage = new Message(room);
+        try{
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            out.println(roomMessage);
+        }catch(IOException e){
+            e.printStackTrace();
+        }
     }
 }

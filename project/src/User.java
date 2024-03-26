@@ -17,6 +17,7 @@ public class User implements Serializable {
     private Socket listeningSocket;
     private NetworkDiscovery networkDiscovery;
     private Instant lastHeartbeat;
+    private Map<String, Socket> socketPeers;
 
     public User(String username, int port) {
         this.userId = UUID.randomUUID();
@@ -45,8 +46,22 @@ public class User implements Serializable {
         Set<User> selected = new HashSet<>(selectPeers());
         Room room = new Room(name, new HashSet<>(selected));
         rooms.put(room.getRoomName(), room);
+        for(User user:selected)
+            networkDiscovery.sendRoom(room, socketPeers.get(user.getUsername()));
         //send creation room message to all partecipant
     }
+
+    //this method is called from the method that reads the received messages if !message.getRoom().isNull()
+    public void addRoom(Message message){
+        Set<User> partecipant = new HashSet<>();
+        for(User user: peers){
+            if(message.getUsers().contains(user.getUsername()))
+                partecipant.add(user);
+        }
+        Room room = new Room(message.getRoomName(), partecipant);
+        rooms.put(room.getName(), room);
+    }
+
     public boolean checkHeartbeat() {
         return Instant.now().minusSeconds(5).isBefore(this.lastHeartbeat); // 10 seconds// timeout
     }
@@ -75,37 +90,6 @@ public class User implements Serializable {
         }
     }
 
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public Room getRoom() {
-        return actualRoom;
-    }
-
-    public void setRoom(Room room){
-        actualRoom = room;
-    }
-
-    public Set<User> listPeers() {
-        return peers;
-    }
-    public int getPort() {
-        return port;
-    }
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public Socket getListeningSocket() {
-        return listeningSocket;
-    }
-
     public void removePeer(UUID userId) {
         User disconnectedUser = this.peers.stream()
                 .filter(user -> user.getUserId() == userId)
@@ -114,10 +98,9 @@ public class User implements Serializable {
         if (disconnectedUser != null) {
             System.out.println("\n" + Color.RESET + disconnectedUser.getUsername() + Color.RED + " DISCONNECT FROM THE NETWORK" + Color.RESET);
             this.peers.remove(disconnectedUser);
+            socketPeers.remove(disconnectedUser.getUsername());
         }
     }
-
-
 
     public void startConnection(String ipPeer, int portPeer) {
         System.out.println("\n" + Color.GREEN + "Connecting to peer..." + Color.RESET);
@@ -140,17 +123,18 @@ public class User implements Serializable {
         User peer = new User(peerUsername, peerId, peerPort, socket);
         System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " CONNECT TO THE NETWORK" + Color.RESET);
         this.peers.add(peer);
+        socketPeers.put(peerUsername, socket);
         networkDiscovery.startHeartbeat(socket);
         return peer;
     }
 
-    public void receiveMessages(){
+    /*public void receiveMessages(){
         new Thread(()->{
             try{
                 while(true){
                     ObjectInputStream in = new ObjectInputStream(listeningSocket.getInputStream());
                     Message msg = (Message) in.readObject();
-                    if(msg.getRoom() != null)
+                    if(msg.getType() == MsgType.ROOM)
                         addRoom(msg);
                     // else handling of messages of chat, maybe will do it directly in the room
                 }
@@ -160,13 +144,7 @@ public class User implements Serializable {
                 e.printStackTrace();
             }
         }).start();
-    }
-
-    //this method is called from the method that reads the received messages if !message.getRoom().isNull()
-    public void addRoom(Message message){
-        Room room = message.getRoom();
-        rooms.put(room.getName(), room);
-    }
+    }*/
 
     private Set<User> selectPeers(){
         Scanner scan = new Scanner(System.in);
@@ -184,6 +162,7 @@ public class User implements Serializable {
             if(cleanUsers.contains(peer.getUsername()))
                 selected.add(peer);
         }
+        scan.close();
         return selected;
     }
 
@@ -193,5 +172,30 @@ public class User implements Serializable {
         for(String word:wordsArray)
             spliced.add(word.trim());
         return spliced;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+    public String getUsername() {
+        return username;
+    }
+    public Room getRoom() {
+        return actualRoom;
+    }
+    public void setRoom(Room room){
+        actualRoom = room;
+    }
+    public Set<User> listPeers() {
+        return peers;
+    }
+    public int getPort() {
+        return port;
+    }
+    public void setPort(int port) {
+        this.port = port;
+    }
+    public Socket getListeningSocket() {
+        return listeningSocket;
     }
 }

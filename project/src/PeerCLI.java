@@ -102,6 +102,7 @@ public class PeerCLI {
                     break;
                 case 5:
                     System.out.println(Color.BLUE + "Exiting..." + Color.RESET);
+                    scanner.close();
                     return;
                 default:
                     System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 5." + Color.RESET);

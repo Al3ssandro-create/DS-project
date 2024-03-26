@@ -15,17 +15,14 @@ public class Room implements Serializable{
         this.name = name;
         this.participants = new HashSet<>(participants);
         this.messages = new ArrayList<>();
-        this.userSequenceNumbers = new HashMap<>();
-        
-        for (User participant : participants) {
-            try{
-                userSequenceNumbers.put(participant, 0);
-                sendRoom(this, participant);
-            }catch(IOException e){
-                e.printStackTrace();
-            }
-        }
-        
+        this.userSequenceNumbers = new HashMap<>();        
+    }
+
+    public void addMessage(Message message) {
+        messages.add(message);
+        User sender = message.getSender();
+        int sequenceNumber = message.getSequenceNumber();
+        userSequenceNumbers.put(sender, sequenceNumber);
     }
 
     public String getRoomName() {
@@ -42,17 +39,5 @@ public class Room implements Serializable{
     }
     public Map<User, Integer> getUserSequenceNumbers() {
         return userSequenceNumbers;
-    }
-    public void addMessage(Message message) {
-        messages.add(message);
-        User sender = message.getSender();
-        int sequenceNumber = message.getSequenceNumber();
-        userSequenceNumbers.put(sender, sequenceNumber);
-    }
-
-    private void sendRoom(Room room, User user) throws IOException{
-            PrintWriter out = new PrintWriter(user.getListeningSocket().getOutputStream(), true);
-            out.println(new Message(this));
-            return;
     }
 }
