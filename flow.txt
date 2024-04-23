@@ -1,0 +1,28 @@
+1. The ClientApp class creates a View and NetworkHandler class, gives the View as a parameter
+of the NetworkHandler and starts it in a thread (NetworkHandler extends Executable).
+2. NetworkHandler ask the port for the incoming messages and a ServerSocket is created.
+3. NetworkHandler starts two thread:
+  - one for receiving messages (a continuos loop that reads incoming messages)
+  - one for the view
+4. NetworkHandler ask to the user if he know other peers:
+  - if no other peers are known waits for someone to connects
+  - if another peer is know send a HELLO message to the known peer
+    -if the peer answer with a GREET message (containing all the other known peers addresses
+     and ports) the client send each of them a HANDSHAKE message (to see if they are still up);
+     if they answer with a GREET message (with all the peers known to them) they are added tp the
+     peer list, if in this second GREET message there are some peers not included in the GREET
+     message of the first peer they are contacted with a HANDSHAKE message.
+     [This to be sure that a new client know all the peer in the case another client connects
+     almost simultaneously to another peer, at least one of them will acknowledge the other and
+     connect each other].
+     For each peer a heartbeat thread will be started to detect disconecction.
+5. NetworkHandler starts a third thread to exchange PING messages between the peers, they work
+as a heartbeat.
+6. The user input will be handled by the class ViewController.
+7. When a new message will be received the class NetworkController will control the action the
+client will perform.
+8. When a client disconnects send a GOODBYE message to all the peers, close its threads and
+connection.
+9. When a clients doesn't receive k consecutives heartbeats from a peer or trying to send it a
+message result in an exception a timer is started, at the end of the timer a LIVE message is
+sent, if the peer doesn't answer the message with a PRESENT message is removed
