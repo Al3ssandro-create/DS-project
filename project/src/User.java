@@ -123,7 +123,7 @@ public class User implements Serializable {
         User peer = new User(peerUsername, peerId, peerPort, socket);
         System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " CONNECT TO THE NETWORK" + Color.RESET);
         this.peers.add(peer);
-        socketPeers.put(peerUsername, socket);
+        //socketPeers.put(peerUsername, socket);
         networkDiscovery.startHeartbeat(socket);
         return peer;
     }
