@@ -1,6 +1,10 @@
-import Color.Color;
+package UI;
 
-import java.io.IOException;
+import Color.Color;
+import Entities.Room;
+import Entities.User;
+import Message.*;
+
 import java.util.*;
 
 public class PeerCLI {
@@ -40,9 +44,19 @@ public class PeerCLI {
             }
         }
         while (true) {
-            System.out.println(Color.BLUE + "1) Create a new Room\n2) See the list of all your rooms\n3) See the chat in a particular room\n4) List all peers\n5) Exit" + Color.RESET);
-            System.out.print(Color.BLUE + "Enter your choice: " + Color.RESET);
-            int choice = scanner.nextInt();
+            System.out.println(Color.BLUE + "1) Create a room \n2) See the list of all your rooms\n3) See the chat in a particular room\n4) List all peers\n5) Exit" + Color.RESET);
+            int choice = 0;
+            boolean validInput = false;
+            while (!validInput) {
+                System.out.print(Color.BLUE + "Enter your choice: " + Color.RESET);
+                if (scanner.hasNextInt()) {
+                    choice = scanner.nextInt();
+                    validInput = true;
+                } else {
+                    System.out.println(Color.RED + "Invalid input. Please enter a number." + Color.RESET);
+                    scanner.nextLine(); // consume the invalid input
+                }
+            }
             scanner.nextLine();
             switch (choice) {
                 case 1:
@@ -62,32 +76,50 @@ public class PeerCLI {
                 case 3:
                     System.out.print(Color.BLUE + "Enter room name: " + Color.RESET);
                     String roomToEnter = scanner.nextLine();
-                    System.out.println(Color.GREEN);
-                    user.setRoom(user.rooms.get(roomToEnter));
-                    user.viewChat(roomToEnter);
+                    Room room = user.findRoom(roomToEnter);
+                    if(room == null){
+                        System.out.println(Color.RED + "Room not found" + Color.RESET);
+                        break;
+                    }else{
+                        user.setRoom(room);
+                        user.viewChat(roomToEnter);
+                    }
                     System.out.println(Color.RESET);
-                    while (true) {
-                        System.out.println(Color.BLUE + "1) Add a message to the room chat\n2) Exit the room" + Color.RESET);
+                    while (user.getRoom() != null) {
+                        System.out.println(Color.BLUE + "1) Add a message to the room chat\n2) Refresh the chat\n3) Exit the room" + Color.RESET);
                         System.out.print(Color.BLUE + "Enter your choice: " + Color.RESET);
-                        int roomChoice = scanner.nextInt();
+                        int roomChoice = 0;
+                        validInput = false;
+                        while (!validInput) {
+                            System.out.print(Color.BLUE + "Enter your choice: " + Color.RESET);
+                            if (scanner.hasNextInt()) {
+                                roomChoice = scanner.nextInt();
+                                validInput = true;
+                            } else {
+                                System.out.println(Color.RED + "Invalid input. Please enter a number." + Color.RESET);
+                                scanner.nextLine(); // consume the invalid input
+                            }
+                        }
                         scanner.nextLine();
                         switch (roomChoice) {
                             case 1:
                                 System.out.print(Color.BLUE + "Enter your message: " + Color.RESET);
                                 String message = scanner.nextLine();
-                                Room room = user.getRoom();
-                                room.addMessage(new Message(user, message, room.getUserSequenceNumbers().get(user) + 1));
+
+                                user.addMessageToRoomAndSend(message);
                                 user.viewChat(roomToEnter);
                                 break;
                             case 2:
+                                user.viewChat(roomToEnter);
+                                break;
+                            case 3:
                                 System.out.println(Color.BLUE + "Exiting room..." + Color.RESET);
                                 user.setRoom(null);
                                 break;
                             default:
-                                System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 2." + Color.RESET);
+                                System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 3" + Color.RESET);
                                 break;
                         }
-                        if (roomChoice == 2) break;
                     }
                     break;
                 case 4:
