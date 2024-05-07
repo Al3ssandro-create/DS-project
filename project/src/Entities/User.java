@@ -1,23 +1,25 @@
-import java.io.BufferedReader;
+package Entities;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.*;
 import Color.Color;
-public class User implements Serializable {
+import Communication.NetworkDiscovery;
+import Message.*;
+
+public class User {
     private final UUID userId;
     private Set<User> peers;
     private final String username;
-    public Map<String, Room> rooms;
+    public Map<UUID, Room> rooms;
     private Room actualRoom = null;
     private int port;
     private Socket listeningSocket;
     private NetworkDiscovery networkDiscovery;
     private Instant lastHeartbeat;
-    private Map<String, Socket> socketPeers;
 
     public User(String username, int port) {
         this.userId = UUID.randomUUID();
@@ -43,23 +45,39 @@ public class User implements Serializable {
 
     public void createRoom(String name){
         System.out.println(Color.BLUE + "Select the partecipants of the room:\n" + Color.RESET);
-        Set<User> selected = new HashSet<>(selectPeers());
+        Set<UUID> selected = new HashSet<>(selectPeers());
+        System.out.println(Color.BLUE + "Room created with the following partecipants:\n" + Color.RESET);
+        for(UUID userId:selected)
+            System.out.println(findPeerByUUID(userId).getUsername());
+        selected.add(this.userId); //add the creator of the room (this user
         Room room = new Room(name, new HashSet<>(selected));
-        rooms.put(room.getRoomName(), room);
-        for(User user:selected)
-            networkDiscovery.sendRoom(room, socketPeers.get(user.getUsername()));
-        //send creation room message to all partecipant
+        rooms.put(room.getRoomId(), room);
+        for(UUID userId:selected) {
+            if(userId != this.userId) {
+                try {
+                    networkDiscovery.sendRoom(room, findPeerByUUID(userId).getListeningSocket());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
+    public User findPeerByUUID(UUID uuid) {
+        return this.peers.stream()
+                .filter(peer -> peer.getUserId().equals(uuid))
+                .findFirst()
+                .orElse(null);
+    }
     //this method is called from the method that reads the received messages if !message.getRoom().isNull()
-    public void addRoom(Message message){
-        Set<User> partecipant = new HashSet<>();
+    public void addRoom(Room receivedRoom){
+        Set<UUID> partecipant = new HashSet<>();
         for(User user: peers){
-            if(message.getUsers().contains(user.getUsername()))
-                partecipant.add(user);
+            if(receivedRoom.getParticipants().contains(user.getUserId()))
+                partecipant.add(user.getUserId());
         }
-        Room room = new Room(message.getRoomName(), partecipant);
-        rooms.put(room.getName(), room);
+        Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages());
+        rooms.put(room.getRoomId(), room);
     }
 
     public boolean checkHeartbeat() {
@@ -70,20 +88,20 @@ public class User implements Serializable {
     }
     public void listRooms(){
         for (Room room : rooms.values()) {
-            System.out.println(room.getName());
+            System.out.println(room.getName() + ": " + room.getRoomId());
         }
     }
 
     public void viewChat(String roomName){
-        Room room = rooms.get(roomName);
+        Room room = findRoom(roomName);
         if(room != null){
             if(room.getMessages().isEmpty()){
                 System.out.println("No messages in this room");
                 return;
             }
             System.out.println(Color.GREEN + "_______________________ " + room.getRoomName() + " _______________________" + Color.RESET);
-            for (Message message : room.getMessages()) {
-                System.out.println(message.getSender().getUsername() + ": " + message.getContent());
+            for (RoomMessage message : room.getMessages()) {
+                System.out.println(message.getSender() + ": " + message.getContent());
             }
         } else {
             System.out.println("Room not found");
@@ -98,7 +116,6 @@ public class User implements Serializable {
         if (disconnectedUser != null) {
             System.out.println("\n" + Color.RESET + disconnectedUser.getUsername() + Color.RED + " DISCONNECT FROM THE NETWORK" + Color.RESET);
             this.peers.remove(disconnectedUser);
-            socketPeers.remove(disconnectedUser.getUsername());
         }
     }
 
@@ -146,9 +163,9 @@ public class User implements Serializable {
         }).start();
     }*/
 
-    private Set<User> selectPeers(){
+    private Set<UUID> selectPeers(){
         Scanner scan = new Scanner(System.in);
-        Set<User> selected = new HashSet<>();
+        Set<UUID> selected = new HashSet<>();
         for(User peer:peers)
             System.out.println(Color.GREEN + peer.getUsername() + "\n" + Color.RESET);
         System.out.println(Color.BLUE + "Write the username(s) of the client(s) to add separated by a comma.\n" + Color.RESET);
@@ -160,9 +177,8 @@ public class User implements Serializable {
         Set<String> cleanUsers = new HashSet<>(spliceString(users));
         for(User peer:peers){
             if(cleanUsers.contains(peer.getUsername()))
-                selected.add(peer);
+                selected.add(peer.getUserId());
         }
-        scan.close();
         return selected;
     }
 
@@ -197,5 +213,31 @@ public class User implements Serializable {
     }
     public Socket getListeningSocket() {
         return listeningSocket;
+    }
+    public void addMessageToRoom(RoomMessage message){;
+        if( rooms.get(message.getRoomId()) != null){
+            rooms.get(message.getRoomId()).addMessage(message);
+        }
+    }
+    public void addMessageToRoomAndSend(String message) {
+        Room room = getRoom();
+        RoomMessage preparedMessage = new RoomMessage( message, 0, this.getUsername(), this.getUserId(), room.getRoomId()); //TODO: sequence number
+        room.addMessage(preparedMessage);
+        try {
+            networkDiscovery.sendRoomMessage(preparedMessage);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public Room findRoom(String roomToEnter) {
+        Room result = null;
+        for(Room room: rooms.values()){
+            if(room.getName().equals(roomToEnter)){
+                result = room;
+            }
+        }
+        return result;
     }
 }
