@@ -7,7 +7,7 @@ import Message.*;
 public abstract class Message implements Serializable {
     private final UUID messageId;
     private final String senderUsername;
-    private final UUID senderId;
+    private UUID senderId;
     private int sequenceNumber; // New field for sequence number
     private String roomName;
     private Set<String> users;

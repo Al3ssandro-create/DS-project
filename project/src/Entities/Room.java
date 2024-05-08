@@ -4,34 +4,112 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.*;
 import Message.*;
+import Vector.VectorClock;
+import Color.Color;
 public class Room implements Serializable{
     private final UUID roomId;
     private final String name;
     private final Set<UUID> participants;
     private List<RoomMessage> messages;
     private Map<UUID, Integer> userSequenceNumbers;
+    private VectorClock vectorClock;
+    private Set<RoomMessage> messageQueue = new HashSet<>();
     
     public Room(String name, Set<UUID> participants) {
         this.roomId = UUID.randomUUID();
         this.name = name;
         this.participants = new HashSet<>(participants);
         this.messages = new ArrayList<>();
-        this.userSequenceNumbers = new HashMap<>();        
+        this.userSequenceNumbers = new HashMap<>();
+        this.vectorClock = new VectorClock(participants);       
     }
     public Room(String name, Set<UUID> participants, UUID roomId, List<RoomMessage> messages){
         this.roomId = roomId;
         this.name = name;
         this.participants = new HashSet<>(participants);
         this.messages = new ArrayList<>(messages);
-        this.userSequenceNumbers = new HashMap<>(); //TODO:???
-
+        this.userSequenceNumbers = new HashMap<>(); 
+        this.vectorClock = new VectorClock(participants); //TODO:???
     }
 
-    public void addMessage(RoomMessage message) {
+    public void addOwnMessage(RoomMessage message){
         messages.add(message);
         UUID sender = message.getSenderId();
         int sequenceNumber = message.getSequenceNumber();
         userSequenceNumbers.put(sender, sequenceNumber);
+        checkQueue();
+    }
+
+    public void addMessage(RoomMessage message) {
+        
+        
+        boolean valid = vectorClockCheck(message);
+        System.out.print(Color.GREEN + "Vector clock ricevuto msg:\n" + Color.RESET);
+        System.out.print(message.getVectorClock().toString());
+        System.out.println(Color.BLUE + "Valid: " + valid + Color.RESET);
+
+        if(valid){
+            messages.add(message);
+            vectorClock.update(message.getVectorClock());
+            System.out.print(Color.GREEN + "Vector clock dopo msg (updated):\n" + Color.RESET);
+            System.out.print(vectorClock.toString());
+            UUID sender = message.getSenderId();
+            int sequenceNumber = message.getSequenceNumber();
+            userSequenceNumbers.put(sender, sequenceNumber);
+            checkQueue();
+        }else{
+            messageQueue.add(message);
+        }
+        for(RoomMessage msg: messageQueue){
+            System.out.println(Color.RED + msg.getSender() + ": " + msg.getContent() + Color.RESET);
+        }
+    }
+
+    private boolean vectorClockCheck(RoomMessage message){
+        //il controllo sul vector clock si fa qua
+        /*the version of vector clocks used is the one where the clock is incremented only
+         * when a message is sent. On receive just merge, not increment*/
+        VectorClock receivedVectorClock = message.getVectorClock();
+        Map<UUID, Integer> receivedVector = receivedVectorClock.getVector();
+        Map<UUID, Integer> thisVector = vectorClock.getVector();
+        System.out.print(Color.GREEN + "Vector clock nella stanza:\n" + Color.RESET);
+        System.out.print(vectorClock.toString());
+        boolean valid = true;
+        System.out.println(Color.BLUE + "Sender user " + message.getSenderId() + "\n" + Color.RESET); 
+        /*controllo che il clock del messaggio sia:
+            - minore o uguale in tutti gli altri peers
+            - uguale al clock che si ha più 1 per il sender
+         se non è così mettere il messagio in coda in attesa che queste condizioni siano vere*/
+        for(UUID user: receivedVector.keySet()){
+            //TODO: controlla che senderId sia senderId !!!
+            if((!message.getSenderId().equals(user)) && (receivedVector.get(user) > thisVector.get(user))){
+                valid = false;
+                System.out.println(Color.RED + "Erorre clock utente " + user + "\n" + Color.RESET);
+            }
+            else if((message.getSenderId().equals(user)) && (receivedVector.get(user) != (thisVector.get(user) + 1))){
+                valid = false;
+                System.out.println(Color.RED + "Erorre clock sender " + user + "\n" + Color.RESET);
+            }
+                
+        }
+        return valid;
+
+    }
+
+    private void checkQueue(){
+        //questo metodo controlla se dei messaggi nella coda possono essere inseriti nella stanza
+        //dopo l'arrivo di altri messaggi
+        boolean update = false;
+        for(RoomMessage message: messageQueue){
+            if(vectorClockCheck(message)){
+                messages.add(message);
+                vectorClock.update(message.getVectorClock());
+                messageQueue.remove(message);
+                update = true;
+                break;
+            }
+        }
+        if(update)checkQueue();
     }
 
     public String getRoomName() {
@@ -51,5 +129,8 @@ public class Room implements Serializable{
     }
     public UUID getRoomId() {
         return roomId;
+    }
+    public VectorClock getVectorClock(){
+        return vectorClock;
     }
 }

@@ -87,7 +87,6 @@ public class PeerCLI {
                     System.out.println(Color.RESET);
                     while (user.getRoom() != null) {
                         System.out.println(Color.BLUE + "1) Add a message to the room chat\n2) Refresh the chat\n3) Exit the room" + Color.RESET);
-                        System.out.print(Color.BLUE + "Enter your choice: " + Color.RESET);
                         int roomChoice = 0;
                         validInput = false;
                         while (!validInput) {

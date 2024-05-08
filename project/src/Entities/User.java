@@ -9,6 +9,7 @@ import java.util.*;
 import Color.Color;
 import Communication.NetworkDiscovery;
 import Message.*;
+import Vector.VectorClock;
 
 public class User {
     private final UUID userId;
@@ -214,16 +215,22 @@ public class User {
     public Socket getListeningSocket() {
         return listeningSocket;
     }
-    public void addMessageToRoom(RoomMessage message){;
+    public void addMessageToRoom(RoomMessage message){
         if( rooms.get(message.getRoomId()) != null){
             rooms.get(message.getRoomId()).addMessage(message);
         }
     }
     public void addMessageToRoomAndSend(String message) {
         Room room = getRoom();
-        RoomMessage preparedMessage = new RoomMessage( message, 0, this.getUsername(), this.getUserId(), room.getRoomId()); //TODO: sequence number
-        room.addMessage(preparedMessage);
         try {
+            //ho messo tutto nel try perché incremento nel clock e invio del messaggio è un'operazione atomica
+            System.out.println(Color.GREEN + "Vector clock prima dell'incremento" + Color.RESET);
+            System.out.println(room.getVectorClock().toString());
+            room.getVectorClock().incrementUser(userId);
+            System.out.println(Color.GREEN + "Vector clock dopo dell'incremento" + Color.RESET);
+            System.out.println(room.getVectorClock().toString());
+            RoomMessage preparedMessage = new RoomMessage(message, 0, this.getUsername(), this.getUserId(), room.getRoomId(), room.getVectorClock()); //TODO: sequence number
+            room.addOwnMessage(preparedMessage);
             networkDiscovery.sendRoomMessage(preparedMessage);
         } catch (IOException e) {
             throw new RuntimeException(e);
