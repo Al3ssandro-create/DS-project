@@ -65,12 +65,20 @@ public class Room implements Serializable{
         }
     }
 
+    /**
+     * Questa funzione controlla che il vector clock di un messaggio arrivato sia consistente con il vector
+     * clock che l'utente ricevente il messaggio ha nella room.
+     * Se non è consistente il messaggio viene inserito in una coda di messaggi in attesa.
+     * Se è consistente viene aggiunto nella lista dei messaggi della stanza e si controlla se messaggi
+     * in attesa adesso siano consistenti
+     * @param message ricevuto
+     * @return se il messaggio ricevuto sia valido (consistente) o no
+     */
     private boolean vectorClockCheck(RoomMessage message){
-        //il controllo sul vector clock si fa qua
-        /*the version of vector clocks used is the one where the clock is incremented only
+        /* il controllo sul vector clock si fa qua
+         * the version of vector clocks used is the one where the clock is incremented only
          * when a message is sent. On receive just merge, not increment*/
-        VectorClock receivedVectorClock = message.getVectorClock();
-        Map<UUID, Integer> receivedVector = receivedVectorClock.getVector();
+        Map<UUID, Integer> receivedVector = message.getVectorClock().getVector();
         Map<UUID, Integer> thisVector = vectorClock.getVector();
         System.out.print(Color.GREEN + "Vector clock nella stanza:\n" + Color.RESET);
         System.out.print(vectorClock.toString());
@@ -80,15 +88,14 @@ public class Room implements Serializable{
             - minore o uguale in tutti gli altri peers
             - uguale al clock che si ha più 1 per il sender
          se non è così mettere il messagio in coda in attesa che queste condizioni siano vere*/
-        for(UUID user: receivedVector.keySet()){
-            //TODO: controlla che senderId sia senderId !!!
-            if((!message.getSenderId().equals(user)) && (receivedVector.get(user) > thisVector.get(user))){
+        for(UUID peer: receivedVector.keySet()){
+            if((!message.getSenderId().equals(peer)) && (receivedVector.get(peer) > thisVector.get(peer))){
                 valid = false;
-                System.out.println(Color.RED + "Erorre clock utente " + user + "\n" + Color.RESET);
+                System.out.println(Color.RED + "Erorre clock utente " + peer + "\n" + Color.RESET);
             }
-            else if((message.getSenderId().equals(user)) && (receivedVector.get(user) != (thisVector.get(user) + 1))){
+            else if((message.getSenderId().equals(peer)) && (receivedVector.get(peer) != (thisVector.get(peer) + 1))){
                 valid = false;
-                System.out.println(Color.RED + "Erorre clock sender " + user + "\n" + Color.RESET);
+                System.out.println(Color.RED + "Erorre clock sender " + peer + "\n" + Color.RESET);
             }
                 
         }
@@ -97,8 +104,8 @@ public class Room implements Serializable{
     }
 
     private void checkQueue(){
-        //questo metodo controlla se dei messaggi nella coda possono essere inseriti nella stanza
-        //dopo l'arrivo di altri messaggi
+        /* questo metodo controlla se dei messaggi nella coda possono essere inseriti nella stanza
+         * dopo l'arrivo di altri messaggi */
         boolean update = false;
         for(RoomMessage message: messageQueue){
             if(vectorClockCheck(message)){

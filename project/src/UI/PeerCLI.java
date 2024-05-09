@@ -6,6 +6,7 @@ import Entities.User;
 import Message.*;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class PeerCLI {
     private int PORT;
@@ -35,8 +36,16 @@ public class PeerCLI {
             if (answer.equals("y") || answer.equals("Y") || answer.equals("yes") || answer.equals("Yes")) {
                 System.out.println(Color.BLUE + "Enter the ip of a peer to connect to: " + Color.RESET);
                 String ipPeer = scanner.nextLine();
+                while(!validIp(ipPeer)){
+                    System.out.println(Color.RED + "Peer's IP not valid" + Color.RESET);
+                    ipPeer = scanner.nextLine();
+                }
                 System.out.println(Color.BLUE + "Enter the port of a peer to connect to: " + Color.RESET);
                 int portPeer = scanner.nextInt();
+                while(portPeer < 1024 || portPeer > 49151 || portPeer == PORT){
+                    System.out.println(Color.RED + "Peer's port must be between 1024 and 49151" + Color.RESET);
+                    portPeer = scanner.nextInt();
+                }
                 user.startConnection(ipPeer, portPeer);
             }else if(!answer.equals("n") && !answer.equals("N") && !answer.equals("no") && !answer.equals("No")) {
                 System.out.println(Color.RED + "Invalid choice. Please enter y or n." + Color.RESET);
@@ -140,5 +149,11 @@ public class PeerCLI {
                     break;
             }
         }
+    }
+
+    private static boolean validIp(final String ip) {
+        Pattern PATTERN = Pattern.compile(
+        "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
+        return PATTERN.matcher(ip).matches();
     }
 }
