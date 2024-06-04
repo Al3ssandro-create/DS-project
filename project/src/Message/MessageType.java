@@ -7,7 +7,8 @@ public class MessageType {
     public static final String ROOM_INIT = "ROOM_INIT";
     public static final String DISCOVERY = "DISCOVERY";
     public static final String RESPONSE_DISCOVERY = "RESPONSE_DISCOVERY";
-
-
-
+    public static final String CHANGE_USERNAME = "CHANGE_USERNAME";
+    public static final String RECONNECT = "RECONNECT";
+    public static final String RESPONSE_RECONNECT = "RESPONSE_RECONNECT";
+    public static final String CHANGE_USERNAME_OR_RECONNECT = "CHANGE_USERNAME_OR_RECONNECT";
 }

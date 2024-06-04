@@ -4,9 +4,12 @@ import Color.Color;
 import Entities.Room;
 import Entities.User;
 import Message.*;
+import UI.PeerCLI;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 import static Message.MessageType.*;
 
@@ -17,66 +20,136 @@ public class NetworkDiscovery {
         this.user = user;
     }
 
-    private void handleIncomingConnection(Socket socket) throws IOException {
-            User handlingUser = null;
-            try {
-                while (true) {
-                    if(handlingUser != null && !handlingUser.checkHeartbeat()) {
-                        System.out.println(Color.RED + "Peer " + handlingUser.getUsername() + " is not responding, removing from peers" + Color.RESET);
-                        user.removePeer(handlingUser.getUserId());
-                        break;
-                    }
-                    Message responseMessage = getMessage(socket);
-                    if(responseMessage != null) {
-                        switch (responseMessage.getType()) {
-                            case DISCOVERY:
-                            case RESPONSE_DISCOVERY:
-                            case PEER:
-                                String peerUsername = responseMessage.getSender();
-                                UUID peerId = responseMessage.getSenderId();
-                                int peerPort = ((ConnectMessage) responseMessage).getPort();
-                                String peerAddress = ((ConnectMessage) responseMessage).getIp();
-                                if(!userExists(peerId) && !responseMessage.getType().equals(PEER)) {
-                                    if (responseMessage.getType().equals(DISCOVERY)) {
-                                        sendResponseDiscoveryMessage(socket);
-                                    }
-
+    private void handleIncomingConnection(Socket socket, CountDownLatch latch) throws IOException {
+        User handlingUser = null;
+        try {
+            while (true) {
+                if(handlingUser != null && !handlingUser.checkHeartbeat()) {
+                    System.out.println(Color.RED + "Peer " + handlingUser.getUsername() + " is not responding, removing from peers" + Color.RESET);
+                    user.removePeer(handlingUser.getUserId());
+                    break;
+                }
+                Message responseMessage = getMessage(socket);
+                if(responseMessage != null) {
+                    System.out.println(responseMessage + responseMessage.getType());
+                    switch (responseMessage.getType()) {
+                        case RESPONSE_RECONNECT:
+                            user.setUserId(((ResponseReconnectMessage) responseMessage).getNewUserId());
+                            user.setDisconnectedUser(((ResponseReconnectMessage) responseMessage).getDisconnectedUser());
+                        case RESPONSE_DISCOVERY:
+                            latch.countDown();
+                        case DISCOVERY:
+                        case PEER:
+                            String peerUsername = responseMessage.getSender();
+                            UUID peerId = responseMessage.getSenderId();
+                            int peerPort = ((ConnectMessage) responseMessage).getPort();
+                            String peerAddress = ((ConnectMessage) responseMessage).getIp();
+                            if(!userExists(peerId) && !responseMessage.getType().equals(PEER) ) {
+                                if(!user.inDisconnected(peerUsername)){
                                     handlingUser = user.addPeer(peerUsername, peerId, peerPort, socket);
-                                    for (User peerUser : user.listPeers()) {
-                                        if (!peerUser.getUserId().equals(peerId) &&  !responseMessage.getType().equals(PEER)) {
-
-                                            //sendMessageToUser(peerUser.getUserId(), "PEER " + peerUsername + " " + peerId + " " + peerPort + " " + peerAddress);
-                                            sendPeerMessage(peerUser.getUserId(), new ConnectMessage(0, peerPort, peerAddress, peerUsername, peerId));
-                                        }
+                                    if(handlingUser == null) {
+                                        sendChangeUsernameMessage(socket);
+                                        break;
                                     }
-                                }else if(responseMessage.getType().equals(PEER)){
-                                    user.startConnection(peerAddress, peerPort);
+                                }else{
+                                    sendChangeUsernameOrReconnectMessage(socket);
+                                    break;
                                 }
-                                break;
-                            case HEARTBEAT:
-                                if (handlingUser != null) {
-                                    handlingUser.updateHeartbeat();
+
+                                if (responseMessage.getType().equals(DISCOVERY)) {
+                                    sendResponseDiscoveryMessage(socket);
                                 }
-                                break;
-                            case ROOM_INIT:
-                                Room room = ((RoomInitMessage) responseMessage).getRoom();
-                                user.addRoom(room);
-                                break;
-                            case ROOM_MESSAGE:
-                                //System.out.println("Arrivato"); qua arriva
-                                RoomMessage roomMessage = (RoomMessage) responseMessage;
-                                user.addMessageToRoom(roomMessage);
-                                break;
-                            default:
-                                System.out.println(Color.RED + "Received unknown message type" + Color.RESET);
-                                break;
-                        }
+
+                                for (User peerUser : user.listPeers()) {
+                                    if (!peerUser.getUserId().equals(peerId)) {
+                                        sendPeerMessage(peerUser.getUserId(), new ConnectMessage(0, peerPort, peerAddress, peerUsername, peerId));
+                                    }
+                                }
+                            }else if(responseMessage.getType().equals(PEER)){
+                                boolean flag = true;
+                                for(User person : user.listPeers()){
+                                    if(person.getUsername().equals(peerUsername)){
+                                        flag = false;
+                                        break;
+                                    }
+
+                                }
+                                if(flag) user.startConnection(peerAddress, peerPort);
+                            }
+                            break;
+                        case RECONNECT:
+                            latch.countDown();
+                            String peerUsernameRe = responseMessage.getSender();
+                            int peerPortRe = ((ConnectMessage) responseMessage).getPort();
+                            String peerAddressRe = ((ConnectMessage) responseMessage).getIp();
+                            handlingUser = user.reconnectPeer(peerUsernameRe, peerPortRe, socket);
+
+                            sendResponseReconnectMessage(socket, handlingUser.getUserId());
+                            for (User peerUser : user.listPeers()) {
+                                if (!peerUser.getUserId().equals(handlingUser.getUserId())) {
+                                    
+                                    //sendPeerMessage(peerUser.getUserId(), new ConnectMessage(0, peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
+                                    //TODO: Mandare il messaggio che si è riconnesso da un' ip diverso ai peer
+                                }
+                            }
+                            break;
+                        case HEARTBEAT:
+                            if (handlingUser != null) {
+                                handlingUser.updateHeartbeat();
+                            }
+                            break;
+                        case ROOM_INIT:
+                            Room room = ((RoomInitMessage) responseMessage).getRoom();
+                            user.addRoom(room);
+                            break;
+                        case ROOM_MESSAGE:
+                            RoomMessage roomMessage = (RoomMessage) responseMessage;
+                            user.addMessageToRoom(roomMessage);
+                            break;
+                        case CHANGE_USERNAME_OR_RECONNECT:
+                            int choice = PeerCLI.ReconnectOrChangeUsername();
+                            if(choice == 2){
+                                changeUsername(socket);
+                            }else{
+                                reconnect(socket);
+                            }
+                            break;
+                        case CHANGE_USERNAME:
+                            PeerCLI.ChangeUsername();
+                            changeUsername(socket);
+                            break;
+                        default:
+                            System.out.println(Color.RED + "Received unknown message type" + Color.RESET);
+                            break;
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+
+
+
+    private void reconnect(Socket socket) {
+        try {
+            sendReconnectMessage(socket);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+    private void changeUsername(Socket socket) {
+        try {
+            sendDiscoveryMessage(socket);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 
 
@@ -89,29 +162,29 @@ public class NetworkDiscovery {
         return false;
     }
 
-    public void sendMessageToUser(UUID userId, String message) throws IOException {
+    private void sendPeerMessage(UUID userId, ConnectMessage message) throws IOException {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(userId)) {
-                PrintWriter out = new PrintWriter(user.getListeningSocket().getOutputStream(), true);
-                out.println(message);
+                message.setType(PEER);
+                sendMessage(user.getListeningSocket(), message);
                 return;
             }
         }
         System.out.println("User not found" );
     }
-    private void sendPeerMessage(UUID userId, ConnectMessage message) {
-        for (User user : this.user.listPeers()) {
-            if (user.getUserId().equals(userId)) {
-                message.setType(PEER);
-                try {
-                    sendMessage(user.getListeningSocket(), message);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return;
-            }
-        }
-        System.out.println("User not found" );
+    private void sendChangeUsernameOrReconnectMessage(Socket socket) throws IOException {
+        ConnectMessage changeUsernameOrReconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        changeUsernameOrReconnectMessage.setType(CHANGE_USERNAME_OR_RECONNECT);
+        sendMessage(socket, changeUsernameOrReconnectMessage);
+    }
+    private void sendReconnectMessage(Socket socket) throws IOException{
+        ConnectMessage reconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        reconnectMessage.setType(RECONNECT);
+        sendMessage(socket, reconnectMessage);
+    }
+    private void sendResponseReconnectMessage(Socket socket, UUID newId) throws IOException{
+        ConnectMessage responseReconnectMessage = new ResponseReconnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId(), newId, user.getDisconnectedUser());//TODO: sequence number
+        sendMessage(socket, responseReconnectMessage);
     }
     private void sendDiscoveryMessage(Socket socket) throws IOException {
         ConnectMessage discoveryMessage = new ConnectMessage( 0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
@@ -122,6 +195,11 @@ public class NetworkDiscovery {
         ConnectMessage responseDiscoveryMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         responseDiscoveryMessage.setType(RESPONSE_DISCOVERY);
         sendMessage(socket, responseDiscoveryMessage);
+    }
+    public void sendChangeUsernameMessage(Socket socket) throws IOException {
+        ConnectMessage changeUsernameMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        changeUsernameMessage.setType(CHANGE_USERNAME);
+        sendMessage(socket, changeUsernameMessage);
     }
     public void sendRoom(Room room, Socket socket) throws IOException {
         RoomInitMessage roomMessage = new RoomInitMessage(0, user.getUsername(), user.getUserId(), room); // TODO: sequence number
@@ -134,13 +212,13 @@ public class NetworkDiscovery {
             }
         }
     }
-    private Message getMessage(Socket socket)  {
+    private Message getMessage(Socket socket){
         ObjectInputStream in;
         try {
             in = new ObjectInputStream(socket.getInputStream());
             return (Message) in.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            return null;
         }
     }
 
@@ -157,13 +235,19 @@ public class NetworkDiscovery {
             try {
                 Socket socket = new Socket(ipPeer, portPeer);
                 sendDiscoveryMessage(socket);
+                CountDownLatch latch = new CountDownLatch(1);
                 new Thread(() -> {
                     try {
-                        handleIncomingConnection(socket);
+                        handleIncomingConnection(socket,latch);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                     }
                 }).start();
+                try{
+                    latch.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 break;
             } catch (IOException e) {
                 System.out.println(Color.RED + "Connection crashed, retrying discovery..." + Color.RESET);
@@ -209,11 +293,12 @@ public class NetworkDiscovery {
                 while (true) {
                     try {
                         Socket socket = serverSocket.accept();
+                        CountDownLatch latch = new CountDownLatch(0);
                         new Thread(() -> {
                             try {
-                                handleIncomingConnection(socket);
+                                handleIncomingConnection(socket, latch);
                             } catch (IOException e) {
-                                e.printStackTrace();
+                                System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                             }
                         }).start();
                     } catch (IOException e) {
@@ -230,14 +315,13 @@ public class NetworkDiscovery {
         new Thread(() -> {
             while (true) {
                 try {
-
+                    Thread.sleep(1000);
                     sendMessage(peerSocket, new HeartbeatMessage(user.getUsername(), 0, user.getUserId())); // TODO: sequence number
-                    int HEARTBEAT_INTERVAL = 1000;
-                    Thread.sleep(HEARTBEAT_INTERVAL);
                 } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
+                    break;
                 }
             }
         }).start();
     }
+
 }
