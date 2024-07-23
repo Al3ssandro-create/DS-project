@@ -26,3 +26,7 @@ connection.
 9. When a clients doesn't receive k consecutives heartbeats from a peer or trying to send it a
 message result in an exception a timer is started, at the end of the timer a LIVE message is
 sent, if the peer doesn't answer the message with a PRESENT message is removed
+
+TODO
+C'è errore quando un peer si connette e sono stati inviati dei messaggi prima (controllare sincronismo)
+Gestire la disconnessione (chiudere tutti i thread, segnalare i peer della disconnessione)

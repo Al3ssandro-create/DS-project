@@ -300,7 +300,7 @@ public class NetworkDiscovery {
                             } catch (IOException e) {
                                 System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                             }
-                        }).start();
+                        }, "startListening_").start();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -321,7 +321,7 @@ public class NetworkDiscovery {
                     break;
                 }
             }
-        }).start();
+        }, "heartbeat_").start();
     }
 
 }
