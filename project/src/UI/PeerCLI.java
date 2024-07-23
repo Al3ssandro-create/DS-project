@@ -5,14 +5,16 @@ import Entities.Room;
 import Entities.User;
 import Message.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
 public class PeerCLI {
     private int PORT;
+    private static User user;
+    private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
 
         System.out.print(Color.BLUE + "Enter your username: " + Color.RESET);
         String username = scanner.nextLine();
@@ -27,7 +29,7 @@ public class PeerCLI {
             PORT = scanner.nextInt();
         }
         scanner.nextLine();
-        User user = new User(username, PORT);
+        user = new User(username, PORT);
         System.out.println(Color.BLUE + "Do you already know someone in the network? (y/n)" + Color.RESET);
         boolean loop = true;
         while(loop) {
@@ -42,9 +44,11 @@ public class PeerCLI {
                 }
                 System.out.println(Color.BLUE + "Enter the port of a peer to connect to: " + Color.RESET);
                 int portPeer = scanner.nextInt();
+                scanner.nextLine();
                 while(portPeer < 1024 || portPeer > 49151 || portPeer == PORT){
                     System.out.println(Color.RED + "Peer's port must be between 1024 and 49151" + Color.RESET);
                     portPeer = scanner.nextInt();
+                    scanner.nextLine();
                 }
                 user.startConnection(ipPeer, portPeer);
             }else if(!answer.equals("n") && !answer.equals("N") && !answer.equals("no") && !answer.equals("No")) {
@@ -143,14 +147,37 @@ public class PeerCLI {
                 case 5:
                     System.out.println(Color.BLUE + "Exiting..." + Color.RESET);
                     scanner.close();
-                    return;
+                    System.exit(0); // Exit the program
                 default:
                     System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 5." + Color.RESET);
                     break;
             }
         }
     }
+    public static int ReconnectOrChangeUsername(){
+        System.out.println(Color.RED + "Username already in use, where you already connected? (y/n)" + Color.RESET);
+        while(true) {
+            String answer = scanner.nextLine();
+            if (answer.equals("y") || answer.equals("Y") || answer.equals("yes") || answer.equals("Yes")) {
+                return 1;
+            }else if(!answer.equals("n") && !answer.equals("N") && !answer.equals("no") && !answer.equals("No")) {
+                System.out.print(Color.BLUE + "Enter new username: " + Color.RESET);
+                String newUsername = scanner.nextLine();
+                user.setUsername(newUsername);
+                System.out.println(Color.GREEN + "Username changed to: " + newUsername + Color.RESET);
+                return 2;
+            }else{
+                System.out.println(Color.RED + "Invalid choice. Please enter y or n." + Color.RESET);
+            }
+        }
+    }
 
+    public static void ChangeUsername() {
+        System.out.println(Color.RED + "Username already in use, change username: " + Color.RESET);
+        String newUsername = scanner.nextLine();
+        user.setUsername(newUsername);
+        System.out.println(Color.GREEN + "Username changed to: " + newUsername + Color.RESET);
+    }
     private static boolean validIp(final String ip) {
         Pattern PATTERN = Pattern.compile(
         "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");

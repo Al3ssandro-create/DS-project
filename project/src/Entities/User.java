@@ -1,8 +1,6 @@
 package Entities;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.*;
@@ -12,22 +10,23 @@ import Message.*;
 import Vector.VectorClock;
 
 public class User {
-    private final UUID userId;
+    private UUID userId;
     private Set<User> peers;
-    private final String username;
+    private Set<UserTuple> disconnectedPeers;
+    private String username;
     public Map<UUID, Room> rooms;
     private Room actualRoom = null;
     private int port;
     private Socket listeningSocket;
     private NetworkDiscovery networkDiscovery;
     private Instant lastHeartbeat;
-
     public User(String username, int port) {
         this.userId = UUID.randomUUID();
         this.username = username;
         this.rooms = new HashMap<>();
         this.port = port;
         this.peers = new HashSet<>();
+        this.disconnectedPeers = new HashSet<>();
         networkDiscovery = new NetworkDiscovery(this);
         new Thread(() -> {
             networkDiscovery.startListening();
@@ -82,14 +81,14 @@ public class User {
     }
 
     public boolean checkHeartbeat() {
-        return Instant.now().minusSeconds(5).isBefore(this.lastHeartbeat); // 10 seconds// timeout
+        return Instant.now().minusSeconds(7).isBefore(this.lastHeartbeat); // 10 seconds// timeout
     }
     public void updateHeartbeat() {
         this.lastHeartbeat = Instant.now();
     }
     public void listRooms(){
         for (Room room : rooms.values()) {
-            System.out.println(room.getName() + ": " + room.getRoomId());
+            System.out.println(room.getName());
         }
     }
 
@@ -116,6 +115,7 @@ public class User {
                 .orElse(null);
         if (disconnectedUser != null) {
             System.out.println("\n" + Color.RESET + disconnectedUser.getUsername() + Color.RED + " DISCONNECT FROM THE NETWORK" + Color.RESET);
+            this.disconnectedPeers.add(new UserTuple(disconnectedUser.getUserId(), disconnectedUser.getUsername()));
             this.peers.remove(disconnectedUser);
         }
     }
@@ -126,18 +126,14 @@ public class User {
     }
 
     public User addPeer(String peerUsername, UUID peerId, int peerPort, Socket socket) {
-        boolean loop;
-        int i = 0;
-        do {
-            i++;
-            loop = false;
-            for (User user : this.peers) {
-                if (user.getUsername().equals(peerUsername)) {
-                    peerUsername = peerUsername + " (" + i + ")";
-                    loop = true;
-                }
+        if(this.username.equals(peerUsername)){
+            return null;
+        }
+        for (User user : this.peers) {
+            if (user.getUsername().equals(peerUsername)) {
+                return null;
             }
-        }while (loop) ;
+        }
         User peer = new User(peerUsername, peerId, peerPort, socket);
         System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " CONNECT TO THE NETWORK" + Color.RESET);
         this.peers.add(peer);
@@ -145,25 +141,6 @@ public class User {
         networkDiscovery.startHeartbeat(socket);
         return peer;
     }
-
-    /*public void receiveMessages(){
-        new Thread(()->{
-            try{
-                while(true){
-                    ObjectInputStream in = new ObjectInputStream(listeningSocket.getInputStream());
-                    Message msg = (Message) in.readObject();
-                    if(msg.getType() == MsgType.ROOM)
-                        addRoom(msg);
-                    // else handling of messages of chat, maybe will do it directly in the room
-                }
-            }catch(IOException e){
-                e.printStackTrace();
-            }catch(ClassNotFoundException e){
-                e.printStackTrace();
-            }
-        }).start();
-    }*/
-
     private Set<UUID> selectPeers(){
         Scanner scan = new Scanner(System.in);
         Set<UUID> selected = new HashSet<>();
@@ -246,5 +223,50 @@ public class User {
             }
         }
         return result;
+    }
+
+    public void setUsername(String newUsername) {
+        this.username = newUsername;
+    }
+
+    public User reconnectPeer(String peerUsernameRe, int peerPortRe, Socket socket) {
+        UserTuple peerTuple = findPeerByUsername(peerUsernameRe);
+        User peer = null;
+        if(peerTuple != null){
+            peer = new User(peerTuple.getUsername(), peerTuple.getId(), peerPortRe, socket);
+            peer.updateHeartbeat();
+            System.out.println("\n" + Color.RESET + peer.getUsername() + Color.GREEN + " RECONNECT TO THE NETWORK" + Color.RESET);
+            this.peers.add(peer);
+            this.disconnectedPeers.remove(peerTuple);
+            networkDiscovery.startHeartbeat(socket);
+        }
+        return peer;
+    }
+    private UserTuple findPeerByUsername(String peerUsername) {
+        for(UserTuple peer:disconnectedPeers){
+            if(peer.getUsername().equals(peerUsername))
+                return peer;
+        }
+        return null;
+    }
+    private void setListeningSocket(Socket socket) {
+        this.listeningSocket = socket;
+    }
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+    public boolean inDisconnected(String peer){
+        for(UserTuple user:disconnectedPeers){
+            if(user.getUsername().equals(peer))
+                return true;
+        }
+        return false;
+    }
+
+    public Set<UserTuple> getDisconnectedUser() {
+        return disconnectedPeers;
+    }
+    public void setDisconnectedUser(Set<UserTuple> disconnectedUser) {
+        this.disconnectedPeers = disconnectedUser;
     }
 }
