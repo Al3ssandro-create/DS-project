@@ -23,6 +23,7 @@ public class Room implements Serializable{
         this.userSequenceNumbers = new HashMap<>();
         this.vectorClock = new VectorClock(participants);       
     }
+
     public Room(String name, Set<UUID> participants, UUID roomId, List<RoomMessage> messages){
         this.roomId = roomId;
         this.name = name;
@@ -32,16 +33,20 @@ public class Room implements Serializable{
         this.vectorClock = new VectorClock(participants); //TODO:???
     }
 
+    public void incrementClock(UUID user){
+        vectorClock.incrementUser(user);
+    }
+
     public void addOwnMessage(RoomMessage message){
         messages.add(message);
         UUID sender = message.getSenderId();
         int sequenceNumber = message.getSequenceNumber();
         userSequenceNumbers.put(sender, sequenceNumber);
+        //vectorClock.incrementUser(sender);
         checkQueue();
     }
 
-    public void addMessage(RoomMessage message) {
-        
+    public void addMessage(RoomMessage message) {       
         
         boolean valid = vectorClockCheck(message);
         System.out.print(Color.GREEN + "Vector clock ricevuto msg:\n" + Color.RESET);
@@ -59,6 +64,7 @@ public class Room implements Serializable{
             checkQueue();
         }else{
             messageQueue.add(message);
+            checkQueue();
         }
         for(RoomMessage msg: messageQueue){
             System.out.println(Color.RED + msg.getSender() + ": " + msg.getContent() + Color.RESET);
@@ -76,8 +82,8 @@ public class Room implements Serializable{
      */
     private boolean vectorClockCheck(RoomMessage message){
         /* il controllo sul vector clock si fa qua
-         * the version of vector clocks used is the one where the clock is incremented only
-         * when a message is sent. On receive just merge, not increment*/
+         * la versione di vector clocks usata è quella in cui il clock è incrementato solo
+         * quando un messaggio è inviato. Su ricesione solo merge, non incremento */
         Map<UUID, Integer> receivedVector = message.getVectorClock().getVector();
         Map<UUID, Integer> thisVector = vectorClock.getVector();
         System.out.print(Color.GREEN + "Vector clock nella stanza:\n" + Color.RESET);
@@ -122,22 +128,29 @@ public class Room implements Serializable{
     public String getRoomName() {
         return name;
     }
+
     public String getName() {
         return name;
     }
+
     public Set<UUID> getParticipants() {
         return participants;
     }
+
     public List<RoomMessage> getMessages() {
         return messages;
     }
+
     public Map<UUID, Integer> getUserSequenceNumbers() {
         return userSequenceNumbers;
     }
+
     public UUID getRoomId() {
         return roomId;
     }
+
     public VectorClock getVectorClock(){
-        return vectorClock;
+        return vectorClock.copy();
     }
+
 }
