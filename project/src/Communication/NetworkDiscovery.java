@@ -91,6 +91,10 @@ public class NetworkDiscovery {
                                     sendPeerReconnectMessage(peerUser.getUserId(), new ConnectMessage(0, peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
                                 }
                             }
+                            Map<UUID, Room> rooms = user.getRooms();
+                            for(UUID commonRoomId : user.commonRooms(handlingUser.getUserId()).keySet()){
+                                    sendRoom(rooms.get(commonRoomId), handlingUser.getListeningSocket());
+                            }
                             break;
                         case RECONNECT_PEER:
                             latch.countDown();
@@ -255,8 +259,8 @@ public class NetworkDiscovery {
                 } catch (InterruptedException e) {
                     System.err.println("Sleep was interrupted.");
                 }
-                System.out.println(Color.RED + "Vector proprio prima di mandare:" + message.getContent() + " a " + userId + Color.RESET);
-                System.out.println(message.getVectorClock().toString());
+                //System.out.println(Color.RED + "Vector proprio prima di mandare:" + message.getContent() + " a " + userId + Color.RESET);
+                //System.out.println(message.getVectorClock().toString());
                 sendMessage(user.findPeerByUUID(userId).getListeningSocket(), message);
             }
         }

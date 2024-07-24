@@ -34,6 +34,7 @@ public class User {
         }, "startListening_").start();
         this.lastHeartbeat = Instant.now();
     }
+
     public User(String username,UUID userId, int port, Socket listeningSocket) {
         this.userId = userId;
         this.username = username;
@@ -53,7 +54,7 @@ public class User {
         selected.add(this.userId); //add the creator of the room (this user
         Room room = new Room(name, new HashSet<>(selected));
         rooms.put(room.getRoomId(), room);
-        for(UUID userId:selected) {
+        for(UUID userId : selected) {
             if(userId != this.userId) {
                 try {
                     networkDiscovery.sendRoom(room, findPeerByUUID(userId).getListeningSocket());
@@ -78,16 +79,18 @@ public class User {
             if(receivedRoom.getParticipants().contains(user.getUserId()))
                 partecipant.add(user.getUserId());
         }
-        Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages());
+        Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages(), receivedRoom.getVectorClock());
         rooms.put(room.getRoomId(), room);
     }
 
     public boolean checkHeartbeat() {
         return Instant.now().minusSeconds(7).isBefore(this.lastHeartbeat); // 10 seconds// timeout
     }
+
     public void updateHeartbeat() {
         this.lastHeartbeat = Instant.now();
     }
+
     public void listRooms(){
         for (Room room : rooms.values()) {
             System.out.println(room.getName());
@@ -143,6 +146,7 @@ public class User {
         networkDiscovery.startHeartbeat(socket);
         return peer;
     }
+
     private Set<UUID> selectPeers(){
         Scanner scan = new Scanner(System.in);
         Set<UUID> selected = new HashSet<>();
@@ -180,6 +184,19 @@ public class User {
 
     public Room getRoom() {
         return actualRoom;
+    }
+
+    public Map<UUID, Room> getRooms(){
+        return rooms;
+    }
+
+    public Map<UUID, Room> commonRooms(UUID peerId){
+        Map<UUID, Room> commonRooms = new HashMap<>();
+        for(UUID room : rooms.keySet()){
+            if(rooms.get(room).contains(peerId));
+                commonRooms.put(room, rooms.get(room));
+        }
+        return commonRooms;
     }
 
     public void setRoom(Room room){

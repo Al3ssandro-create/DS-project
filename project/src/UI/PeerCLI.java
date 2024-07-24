@@ -117,7 +117,6 @@ public class PeerCLI {
                             case 1:
                                 System.out.print(Color.BLUE + "Enter your message: " + Color.RESET);
                                 String message = scanner.nextLine();
-
                                 user.addMessageToRoomAndSend(message);
                                 user.viewChat(roomToEnter);
                                 break;
