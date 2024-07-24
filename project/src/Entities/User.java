@@ -242,6 +242,14 @@ public class User {
         }
         return peer;
     }
+
+    public void reconnectPeerWithID(String peerUsername) {
+        UserTuple peerTuple = findPeerByUsername(peerUsername);
+        if(peerTuple != null){
+            this.disconnectedPeers.remove(peerTuple);
+        }
+    }
+
     private UserTuple findPeerByUsername(String peerUsername) {
         for(UserTuple peer:disconnectedPeers){
             if(peer.getUsername().equals(peerUsername))

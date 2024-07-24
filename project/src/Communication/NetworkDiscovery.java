@@ -31,7 +31,7 @@ public class NetworkDiscovery {
                 }
                 Message responseMessage = getMessage(socket);
                 if(responseMessage != null) {
-                    System.out.println(responseMessage + responseMessage.getType());
+                    //System.out.println(responseMessage + responseMessage.getType());
                     switch (responseMessage.getType()) {
                         case RESPONSE_RECONNECT:
                             user.setUserId(((ResponseReconnectMessage) responseMessage).getNewUserId());
@@ -87,11 +87,17 @@ public class NetworkDiscovery {
                             sendResponseReconnectMessage(socket, handlingUser.getUserId());
                             for (User peerUser : user.listPeers()) {
                                 if (!peerUser.getUserId().equals(handlingUser.getUserId())) {
-                                    
-                                    //sendPeerMessage(peerUser.getUserId(), new ConnectMessage(0, peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
-                                    //TODO: Mandare il messaggio che si è riconnesso da un' ip diverso ai peer
+                                    sendPeerReconnectMessage(peerUser.getUserId(), new ConnectMessage(0, peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
                                 }
                             }
+                            break;
+                        case RECONNECT_PEER:
+                            latch.countDown();
+                            String peerUsernameReP = responseMessage.getSender();
+                            int peerPortReP = ((ConnectMessage) responseMessage).getPort();
+                            String peerAddressReP = ((ConnectMessage) responseMessage).getIp();
+                            user.reconnectPeerWithID(peerUsernameReP);
+                            user.startConnection(peerAddressReP, peerPortReP);
                             break;
                         case HEARTBEAT:
                             if (handlingUser != null) {
@@ -150,9 +156,6 @@ public class NetworkDiscovery {
         }
     }
 
-
-
-
     private boolean userExists(UUID peerId) {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(peerId)) {
@@ -166,6 +169,16 @@ public class NetworkDiscovery {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(userId)) {
                 message.setType(PEER);
+                sendMessage(user.getListeningSocket(), message);
+                return;
+            }
+        }
+        System.out.println("User not found" );
+    }
+    private void sendPeerReconnectMessage(UUID userId, ConnectMessage message) throws IOException{
+        for (User user : this.user.listPeers()) {
+            if (user.getUserId().equals(userId)) {
+                message.setType(RECONNECT_PEER);
                 sendMessage(user.getListeningSocket(), message);
                 return;
             }
