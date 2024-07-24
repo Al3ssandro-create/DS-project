@@ -14,6 +14,19 @@ public class VectorClock implements Serializable{
         }
     }
 
+    public VectorClock(Map<UUID, Integer> vector){
+        this.vector = vector;
+    }
+
+    public VectorClock copy(){
+        Map<UUID, Integer> copy = new HashMap<>();
+        for(UUID user : vector.keySet()){
+            copy.put(user, vector.get(user));
+        }
+        VectorClock copyVectorClock = new VectorClock(copy);
+        return copyVectorClock;
+    }
+
     public void updateUser(UUID userId, int val){
         vector.put(userId, val);
     }

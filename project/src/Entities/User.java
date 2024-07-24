@@ -20,6 +20,7 @@ public class User {
     private Socket listeningSocket;
     private NetworkDiscovery networkDiscovery;
     private Instant lastHeartbeat;
+
     public User(String username, int port) {
         this.userId = UUID.randomUUID();
         this.username = username;
@@ -30,7 +31,7 @@ public class User {
         networkDiscovery = new NetworkDiscovery(this);
         new Thread(() -> {
             networkDiscovery.startListening();
-        }).start();
+        }, "startListening_").start();
         this.lastHeartbeat = Instant.now();
     }
     public User(String username,UUID userId, int port, Socket listeningSocket) {
@@ -69,6 +70,7 @@ public class User {
                 .findFirst()
                 .orElse(null);
     }
+
     //this method is called from the method that reads the received messages if !message.getRoom().isNull()
     public void addRoom(Room receivedRoom){
         Set<UUID> partecipant = new HashSet<>();
@@ -171,42 +173,53 @@ public class User {
     public UUID getUserId() {
         return userId;
     }
+
     public String getUsername() {
         return username;
     }
+
     public Room getRoom() {
         return actualRoom;
     }
+
     public void setRoom(Room room){
         actualRoom = room;
     }
+
     public Set<User> listPeers() {
         return peers;
     }
+
     public int getPort() {
         return port;
     }
+
     public void setPort(int port) {
         this.port = port;
     }
+
     public Socket getListeningSocket() {
         return listeningSocket;
     }
+
     public void addMessageToRoom(RoomMessage message){
         if( rooms.get(message.getRoomId()) != null){
             rooms.get(message.getRoomId()).addMessage(message);
         }
     }
+
     public void addMessageToRoomAndSend(String message) {
         Room room = getRoom();
         try {
-            //ho messo tutto nel try perché incremento nel clock e invio del messaggio è un'operazione atomica
+            //ho messo tutto nel try perché incremento del clock e invio del messaggio è un'operazione atomica
             System.out.println(Color.GREEN + "Vector clock prima dell'incremento" + Color.RESET);
             System.out.println(room.getVectorClock().toString());
             room.getVectorClock().incrementUser(userId);
             System.out.println(Color.GREEN + "Vector clock dopo dell'incremento" + Color.RESET);
             System.out.println(room.getVectorClock().toString());
-            RoomMessage preparedMessage = new RoomMessage(message, 0, this.getUsername(), this.getUserId(), room.getRoomId(), room.getVectorClock()); //TODO: sequence number
+            room.incrementClock(this.getUserId());
+            VectorClock nowVector = room.getVectorClock();
+            RoomMessage preparedMessage = new RoomMessage(message, 0, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector); //TODO: sequence number
             room.addOwnMessage(preparedMessage);
             networkDiscovery.sendRoomMessage(preparedMessage);
         } catch (IOException e) {
@@ -257,12 +270,15 @@ public class User {
         }
         return null;
     }
+
     private void setListeningSocket(Socket socket) {
         this.listeningSocket = socket;
     }
+
     public void setUserId(UUID userId) {
         this.userId = userId;
     }
+
     public boolean inDisconnected(String peer){
         for(UserTuple user:disconnectedPeers){
             if(user.getUsername().equals(peer))
@@ -274,6 +290,7 @@ public class User {
     public Set<UserTuple> getDisconnectedUser() {
         return disconnectedPeers;
     }
+
     public void setDisconnectedUser(Set<UserTuple> disconnectedUser) {
         this.disconnectedPeers = disconnectedUser;
     }

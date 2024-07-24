@@ -16,6 +16,7 @@ import static Message.MessageType.*;
 public class NetworkDiscovery {
     private final User user;
     private ServerSocket serverSocket;
+
     public NetworkDiscovery(User user) {
         this.user = user;
     }
@@ -135,9 +136,6 @@ public class NetworkDiscovery {
         }
     }
 
-
-
-
     private void reconnect(Socket socket) {
         try {
             sendReconnectMessage(socket);
@@ -145,8 +143,6 @@ public class NetworkDiscovery {
             throw new RuntimeException(e);
         }
     }
-
-
 
     private void changeUsername(Socket socket) {
         try {
@@ -185,46 +181,87 @@ public class NetworkDiscovery {
         }
         System.out.println("User not found" );
     }
+
     private void sendChangeUsernameOrReconnectMessage(Socket socket) throws IOException {
         ConnectMessage changeUsernameOrReconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         changeUsernameOrReconnectMessage.setType(CHANGE_USERNAME_OR_RECONNECT);
         sendMessage(socket, changeUsernameOrReconnectMessage);
     }
+
     private void sendReconnectMessage(Socket socket) throws IOException{
         ConnectMessage reconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         reconnectMessage.setType(RECONNECT);
         sendMessage(socket, reconnectMessage);
     }
+
     private void sendResponseReconnectMessage(Socket socket, UUID newId) throws IOException{
         ConnectMessage responseReconnectMessage = new ResponseReconnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId(), newId, user.getDisconnectedUser());//TODO: sequence number
         sendMessage(socket, responseReconnectMessage);
     }
+
     private void sendDiscoveryMessage(Socket socket) throws IOException {
         ConnectMessage discoveryMessage = new ConnectMessage( 0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         discoveryMessage.setType(DISCOVERY);
         sendMessage(socket, discoveryMessage);
     }
+
     private void sendResponseDiscoveryMessage(Socket socket) throws IOException {
         ConnectMessage responseDiscoveryMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         responseDiscoveryMessage.setType(RESPONSE_DISCOVERY);
         sendMessage(socket, responseDiscoveryMessage);
     }
+
     public void sendChangeUsernameMessage(Socket socket) throws IOException {
         ConnectMessage changeUsernameMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         changeUsernameMessage.setType(CHANGE_USERNAME);
         sendMessage(socket, changeUsernameMessage);
     }
+
     public void sendRoom(Room room, Socket socket) throws IOException {
         RoomInitMessage roomMessage = new RoomInitMessage(0, user.getUsername(), user.getUserId(), room); // TODO: sequence number
         sendMessage(socket, roomMessage);
     }
+
     public void sendRoomMessage(RoomMessage message) throws IOException {
+
+        // Debugger mode per verificare che i vector clock funzionino bene anche empiricamente
+        Scanner scanner = new Scanner(System.in);
+        String debug;
+        Map<UUID, Integer> UserTime = new HashMap<>();
         for (UUID userId : user.getRoom().getParticipants()){
             if(!userId.equals(user.getUserId())){
+                UserTime.put(userId, 0);
+            }
+        }
+        if(message.getContent().contains("DEBUG")){
+            System.out.println(Color.GRAY + "Wanna enter debug mode? (y/n)" + Color.RESET);
+            debug = scanner.nextLine();
+            if(debug.equals("y") || debug.equals("Y")){
+                Integer delay;
+                for (UUID userId : user.getRoom().getParticipants()){
+                    if(!userId.equals(user.getUserId())){
+                        System.out.println(Color.GRAY + "Select the delay time for " + userId + " (in milliseconds)" + Color.RESET);
+                        delay = scanner.nextInt();
+                        UserTime.put(userId, delay);
+                    }
+                }
+            }
+        }
+
+        for (UUID userId : user.getRoom().getParticipants()){
+            if(!userId.equals(user.getUserId())){
+                try {
+                    Thread.sleep(UserTime.get(userId));
+                } catch (InterruptedException e) {
+                    System.err.println("Sleep was interrupted.");
+                }
+                System.out.println(Color.RED + "Vector proprio prima di mandare:" + message.getContent() + " a " + userId + Color.RESET);
+                System.out.println(message.getVectorClock().toString());
                 sendMessage(user.findPeerByUUID(userId).getListeningSocket(), message);
             }
         }
     }
+
     private Message getMessage(Socket socket){
         ObjectInputStream in;
         try {
@@ -234,7 +271,6 @@ public class NetworkDiscovery {
             return null;
         }
     }
-
 
     private void sendMessage(Socket socket, Message message) throws IOException{
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
@@ -301,7 +337,7 @@ public class NetworkDiscovery {
                     }
                 }
             }
-            //System.out.println(Color.GREEN + "Your IP is: " + InetAddress.getLocalHost().getHostAddress() + " Listening for incoming connections on port " + user.getPort() + Color.RESET);
+
             // Start a new thread that handles incoming connections
                 while (true) {
                     try {
@@ -313,7 +349,7 @@ public class NetworkDiscovery {
                             } catch (IOException e) {
                                 System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                             }
-                        }, "startListening_").start();
+                        }, "handleIncomingConnection_").start();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
