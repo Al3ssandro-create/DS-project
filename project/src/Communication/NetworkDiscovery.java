@@ -129,6 +129,9 @@ public class NetworkDiscovery {
                             PeerCLI.ChangeUsername();
                             changeUsername(socket);
                             break;
+                        case DELETE_ROOM:
+                            user.deleteRoom(((DeleteRoomMessage) responseMessage).getRoomId());
+                            break;
                         default:
                             System.out.println(Color.RED + "Received unknown message type" + Color.RESET);
                             break;
@@ -155,7 +158,14 @@ public class NetworkDiscovery {
             throw new RuntimeException(e);
         }
     }
-
+    public void deleteRoom(UUID roomID, Socket socket){
+        try{
+            DeleteRoomMessage roomDeleteMessage = new DeleteRoomMessage( user.getUsername(), user.getUserId(), 0, roomID);
+            sendMessage(socket, roomDeleteMessage);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
     private boolean userExists(UUID peerId) {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(peerId)) {

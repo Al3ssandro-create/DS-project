@@ -57,7 +57,7 @@ public class PeerCLI {
             }
         }
         while (true) {
-            System.out.println(Color.BLUE + "1) Create a room \n2) See the list of all your rooms\n3) See the chat in a particular room\n4) List all peers\n5) Exit" + Color.RESET);
+            System.out.println(Color.BLUE + "1) Create a room \n2) See the list of all your rooms\n3) See the chat in a particular room\n4) List all peers\n5) Delete a Room\n6) Exit" + Color.RESET);
             int choice = 0;
             boolean validInput = false;
             while (!validInput) {
@@ -144,6 +144,12 @@ public class PeerCLI {
                     System.out.println(Color.RESET);
                     break;
                 case 5:
+                    System.out.print(Color.BLUE + "Enter the name of the room you want to delete: " + Color.RESET);
+                    String roomToDeleteName = scanner.nextLine();
+                    Room roomToDelete = user.findRoom(roomToDeleteName);
+                    user.deleteRoomAndForward(roomToDelete);
+                    break;
+                case 6:
                     System.out.println(Color.BLUE + "Exiting..." + Color.RESET);
                     scanner.close();
                     System.exit(0); // Exit the program

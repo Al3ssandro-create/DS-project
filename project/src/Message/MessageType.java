@@ -12,4 +12,5 @@ public class MessageType {
     public static final String RESPONSE_RECONNECT = "RESPONSE_RECONNECT";
     public static final String CHANGE_USERNAME_OR_RECONNECT = "CHANGE_USERNAME_OR_RECONNECT";
     public static final String RECONNECT_PEER = "RECONNECT_PEER";
+    public static final String DELETE_ROOM = "DELETE_ROOM";
 }

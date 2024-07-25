@@ -82,7 +82,26 @@ public class User {
         Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages(), receivedRoom.getVectorClock());
         rooms.put(room.getRoomId(), room);
     }
-
+    public void deleteRoomAndForward(Room room){
+        if(room != null){
+            for(UUID userId : room.getParticipants()) {
+                if(userId != this.userId) {
+                    User peerToNotice = findPeerByUUID(userId);
+                    if(peerToNotice != null) {
+                        networkDiscovery.deleteRoom(room.getRoomId(), peerToNotice.getListeningSocket());
+                    }else{
+                        //TODO:LUI entra qua ma non so perchè, ma allo stesso tempo funziona
+                    }
+                }
+            }
+            rooms.remove(room.getRoomId());
+        } else {
+            System.out.println("Room not found");
+        }
+    }
+    public void deleteRoom(UUID roomId){
+        rooms.remove(roomId);
+    }
     public boolean checkHeartbeat() {
         return Instant.now().minusSeconds(7).isBefore(this.lastHeartbeat); // 10 seconds// timeout
     }
@@ -163,6 +182,7 @@ public class User {
             if(cleanUsers.contains(peer.getUsername()))
                 selected.add(peer.getUserId());
         }
+        System.out.println("selected are" + selected);
         return selected;
     }
 
