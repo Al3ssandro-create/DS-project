@@ -103,6 +103,14 @@ public class NetworkDiscovery {
                             String peerAddressReP = ((ConnectMessage) responseMessage).getIp();
                             user.reconnectPeerWithID(peerUsernameReP);
                             user.startConnection(peerAddressReP, peerPortReP);
+                            /*UUID reconnectedUUID = responseMessage.getSenderId();
+                            User reconnected = user.findPeerByUUID(reconnectedUUID);
+                            Map<UUID, Room> roomsPeer = user.getRooms();
+                            if(!user.commonRooms(reconnected.getUserId()).isEmpty()){
+                                for(UUID commonRoomId : user.commonRooms(reconnected.getUserId()).keySet()){
+                                        sendRoom(roomsPeer.get(commonRoomId), reconnected.getListeningSocket());
+                                }
+                            } */
                             break;
                         case HEARTBEAT:
                             if (handlingUser != null) {
@@ -158,6 +166,7 @@ public class NetworkDiscovery {
             throw new RuntimeException(e);
         }
     }
+    
     public void deleteRoom(UUID roomID, Socket socket){
         try{
             DeleteRoomMessage roomDeleteMessage = new DeleteRoomMessage( user.getUsername(), user.getUserId(), 0, roomID);
@@ -166,6 +175,7 @@ public class NetworkDiscovery {
             throw new RuntimeException(e);
         }
     }
+    
     private boolean userExists(UUID peerId) {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(peerId)) {
@@ -185,6 +195,7 @@ public class NetworkDiscovery {
         }
         System.out.println("User not found" );
     }
+    
     private void sendPeerReconnectMessage(UUID userId, ConnectMessage message) throws IOException{
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(userId)) {
@@ -241,13 +252,13 @@ public class NetworkDiscovery {
         // Debugger mode per verificare che i vector clock funzionino bene anche empiricamente
         Scanner scanner = new Scanner(System.in);
         String debug;
-        Map<UUID, Integer> UserTime = new HashMap<>();
+        Map<UUID, Integer> userTime = new HashMap<>();
         for (UUID userId : user.getRoom().getParticipants()){
             if(!userId.equals(user.getUserId())){
-                UserTime.put(userId, 0);
+                userTime.put(userId, 0);
             }
         }
-        if(message.getContent().contains("DEBUG")){
+        if(message.getContent().contains("DEBUG") || message.getContent().contains("debug")){
             System.out.println(Color.GRAY + "Wanna enter debug mode? (y/n)" + Color.RESET);
             debug = scanner.nextLine();
             if(debug.equals("y") || debug.equals("Y")){
@@ -256,7 +267,7 @@ public class NetworkDiscovery {
                     if(!userId.equals(user.getUserId())){
                         System.out.println(Color.GRAY + "Select the delay time for " + userId + " (in milliseconds)" + Color.RESET);
                         delay = scanner.nextInt();
-                        UserTime.put(userId, delay);
+                        userTime.put(userId, delay);
                     }
                 }
             }
@@ -265,7 +276,7 @@ public class NetworkDiscovery {
         for (UUID userId : user.getRoom().getParticipants()){
             if(!userId.equals(user.getUserId())){
                 try {
-                    Thread.sleep(UserTime.get(userId));
+                    Thread.sleep(userTime.get(userId));
                 } catch (InterruptedException e) {
                     System.err.println("Sleep was interrupted.");
                 }
@@ -292,12 +303,16 @@ public class NetworkDiscovery {
         out.flush();
     }
 
-    public void connectToPeer(String ipPeer, int portPeer) {
+    public void connectToPeer(String ipPeer, int portPeer, User sender) {
         int MAX_RETRIES = 5;
         for(int i = 0; i < MAX_RETRIES; i++) {
             try {
                 Socket socket = new Socket(ipPeer, portPeer);
                 sendDiscoveryMessage(socket);
+                Map<UUID, Room> rooms = sender.getRooms();
+                    for(UUID roomId : rooms.keySet()){
+                        sendRoom(rooms.get(roomId), socket);
+                    }
                 CountDownLatch latch = new CountDownLatch(1);
                 new Thread(() -> {
                     try {
@@ -305,7 +320,7 @@ public class NetworkDiscovery {
                     } catch (IOException e) {
                         System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                     }
-                }).start();
+                }, "handleIncomingConnectionClientSide_").start();
                 try{
                     latch.await();
                 } catch (InterruptedException e) {
@@ -363,7 +378,7 @@ public class NetworkDiscovery {
                             } catch (IOException e) {
                                 System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                             }
-                        }, "handleIncomingConnection_").start();
+                        }, "handleIncomingConnectionServerSide_").start();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

@@ -89,7 +89,7 @@ public class Room implements Serializable{
         //System.out.print(Color.GREEN + "Vector clock nella stanza:\n" + Color.RESET);
         //System.out.print(vectorClock.toString());
         boolean valid = true;
-        System.out.println(Color.BLUE + "Sender user " + message.getSenderId() + "\n" + Color.RESET); 
+        //System.out.println(Color.BLUE + "Sender user " + message.getSenderId() + "\n" + Color.RESET); 
         /*controllo che il clock del messaggio sia:
             - minore o uguale in tutti gli altri peers
             - uguale al clock che si ha più 1 per il sender

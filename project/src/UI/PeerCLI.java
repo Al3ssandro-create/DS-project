@@ -159,13 +159,14 @@ public class PeerCLI {
             }
         }
     }
+
     public static int ReconnectOrChangeUsername(){
         System.out.println(Color.RED + "Username already in use, where you already connected? (y/n)" + Color.RESET);
         while(true) {
             String answer = scanner.nextLine();
             if (answer.equals("y") || answer.equals("Y") || answer.equals("yes") || answer.equals("Yes")) {
                 return 1;
-            }else if(!answer.equals("n") && !answer.equals("N") && !answer.equals("no") && !answer.equals("No")) {
+            }else if(answer.equals("n") || answer.equals("N") || answer.equals("no") || answer.equals("No")) {
                 System.out.print(Color.BLUE + "Enter new username: " + Color.RESET);
                 String newUsername = scanner.nextLine();
                 user.setUsername(newUsername);
@@ -183,6 +184,7 @@ public class PeerCLI {
         user.setUsername(newUsername);
         System.out.println(Color.GREEN + "Username changed to: " + newUsername + Color.RESET);
     }
+
     private static boolean validIp(final String ip) {
         Pattern PATTERN = Pattern.compile(
         "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");

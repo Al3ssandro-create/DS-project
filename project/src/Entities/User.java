@@ -74,14 +74,17 @@ public class User {
 
     //this method is called from the method that reads the received messages if !message.getRoom().isNull()
     public void addRoom(Room receivedRoom){
-        Set<UUID> partecipant = new HashSet<>();
-        for(User user: peers){
+        if(!rooms.keySet().contains(receivedRoom.getRoomId()) && receivedRoom.getParticipants().contains(this.userId)){
+            Set<UUID> partecipant = new HashSet<>();
+            for(User user: peers){
             if(receivedRoom.getParticipants().contains(user.getUserId()))
                 partecipant.add(user.getUserId());
+            }
+            Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages(), receivedRoom.getVectorClock());
+            rooms.put(room.getRoomId(), room);
         }
-        Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages(), receivedRoom.getVectorClock());
-        rooms.put(room.getRoomId(), room);
     }
+
     public void deleteRoomAndForward(Room room){
         if(room != null){
             for(UUID userId : room.getParticipants()) {
@@ -146,7 +149,7 @@ public class User {
 
     public void startConnection(String ipPeer, int portPeer) {
         System.out.println("\n" + Color.GREEN + "Connecting to peer..." + Color.RESET);
-        networkDiscovery.connectToPeer(ipPeer, portPeer);
+        networkDiscovery.connectToPeer(ipPeer, portPeer, this);
     }
 
     public User addPeer(String peerUsername, UUID peerId, int peerPort, Socket socket) {
@@ -249,11 +252,11 @@ public class User {
         Room room = getRoom();
         try {
             //ho messo tutto nel try perché incremento del clock e invio del messaggio è un'operazione atomica
-            System.out.println(Color.GREEN + "Vector clock prima dell'incremento" + Color.RESET);
-            System.out.println(room.getVectorClock().toString());
+            //System.out.println(Color.GREEN + "Vector clock prima dell'incremento" + Color.RESET);
+            //System.out.println(room.getVectorClock().toString());
             room.getVectorClock().incrementUser(userId);
-            System.out.println(Color.GREEN + "Vector clock dopo dell'incremento" + Color.RESET);
-            System.out.println(room.getVectorClock().toString());
+            //System.out.println(Color.GREEN + "Vector clock dopo dell'incremento" + Color.RESET);
+            //System.out.println(room.getVectorClock().toString());
             room.incrementClock(this.getUserId());
             VectorClock nowVector = room.getVectorClock();
             RoomMessage preparedMessage = new RoomMessage(message, 0, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector); //TODO: sequence number
