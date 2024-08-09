@@ -45,6 +45,11 @@ public class User {
         this.lastHeartbeat = Instant.now();
     }
 
+    /**
+     * Create a room and send it to the selected users in order that they can add it to their rooms
+     *
+     * @param name
+     */
     public void createRoom(String name){
         System.out.println(Color.BLUE + "Select the partecipants of the room:\n" + Color.RESET);
         Set<UUID> selected = new HashSet<>(selectPeers());
@@ -65,6 +70,11 @@ public class User {
         }
     }
 
+    /**
+     * Find a peer by its UUID
+     * @param uuid UUID of the peer to find
+     * @return the peer if found, null otherwise
+     */
     public User findPeerByUUID(UUID uuid) {
         return this.peers.stream()
                 .filter(peer -> peer.getUserId().equals(uuid))
@@ -72,7 +82,11 @@ public class User {
                 .orElse(null);
     }
 
-    //this method is called from the method that reads the received messages if !message.getRoom().isNull()
+    /**
+     * Add a room to the user's room list if it is not already present and if the user is part of it
+     *
+     * @param receivedRoom room to add
+     */
     public void addRoom(Room receivedRoom){
         if(!rooms.keySet().contains(receivedRoom.getRoomId()) && receivedRoom.getParticipants().contains(this.userId)){
             Set<UUID> partecipant = new HashSet<>();
@@ -85,6 +99,11 @@ public class User {
         }
     }
 
+    /**
+     * Delete a room and forward the deletion to the other participants
+     *
+     * @param room room to delete
+     */
     public void deleteRoomAndForward(Room room){
         if(room != null){
             for(UUID userId : room.getParticipants()) {
@@ -102,17 +121,34 @@ public class User {
             System.out.println("Room not found");
         }
     }
+
+    /**
+     * Delete a room
+     *
+     * @param roomId room to delete
+     */
     public void deleteRoom(UUID roomId){
         rooms.remove(roomId);
     }
+
+    /**
+     * Check if the user is still connected
+     * @return true if the user is still connected, false otherwise
+     */
     public boolean checkHeartbeat() {
         return Instant.now().minusSeconds(7).isBefore(this.lastHeartbeat); // 10 seconds// timeout
     }
 
+    /**
+     * Update the last heartbeat of the user
+     */
     public void updateHeartbeat() {
         this.lastHeartbeat = Instant.now();
     }
 
+    /**
+     * List all the rooms
+     */
     public void listRooms(){
         for (Room room : rooms.values()) {
             System.out.println(room.getName());
@@ -135,6 +171,10 @@ public class User {
         }
     }
 
+    /**
+     * Remove a peer from the list of peers
+     * @param userId UUID of the peer to remove
+     */
     public void removePeer(UUID userId) {
         User disconnectedUser = this.peers.stream()
                 .filter(user -> user.getUserId() == userId)
@@ -147,11 +187,24 @@ public class User {
         }
     }
 
+    /**
+     * Start the connection with a peer
+     * @param ipPeer IP of the peer to connect to
+     * @param portPeer port of the peer to connect to
+     */
     public void startConnection(String ipPeer, int portPeer) {
         System.out.println("\n" + Color.GREEN + "Connecting to peer..." + Color.RESET);
         networkDiscovery.connectToPeer(ipPeer, portPeer, this);
     }
 
+    /**
+     * Add a peer to the list of peers
+     * @param peerUsername username of the peer to add
+     * @param peerId UUID of the peer to add
+     * @param peerPort port of the peer to add
+     * @param socket socket of the peer to add
+     * @return the peer if added, null otherwise
+     */
     public User addPeer(String peerUsername, UUID peerId, int peerPort, Socket socket) {
         if(this.username.equals(peerUsername)){
             return null;
@@ -169,6 +222,10 @@ public class User {
         return peer;
     }
 
+    /**
+     * Select the peers to add to a room
+     * @return the set of the selected peers
+     */
     private Set<UUID> selectPeers(){
         Scanner scan = new Scanner(System.in);
         Set<UUID> selected = new HashSet<>();
@@ -189,6 +246,11 @@ public class User {
         return selected;
     }
 
+    /**
+     * Split a string by comma and return a set of the words
+     * @param fullString string to split
+     * @return the set of the words
+     */
     private Set<String> spliceString(String fullString){
         String[] wordsArray = fullString.split(",");
         Set<String> spliced = new HashSet<>();
@@ -213,6 +275,11 @@ public class User {
         return rooms;
     }
 
+    /**
+     * Find the common rooms between the user and a peer
+     * @param peerId UUID of the peer
+     * @return the map of the common rooms
+     */
     public Map<UUID, Room> commonRooms(UUID peerId){
         Map<UUID, Room> commonRooms = new HashMap<>();
         for(UUID room : rooms.keySet()){
@@ -242,12 +309,20 @@ public class User {
         return listeningSocket;
     }
 
+    /**
+     * Add a message to a room
+     * @param message message to add
+     */
     public void addMessageToRoom(RoomMessage message){
         if( rooms.get(message.getRoomId()) != null){
             rooms.get(message.getRoomId()).addMessage(message);
         }
     }
 
+    /**
+     * Add a message to a room and send it to the other participants
+     * @param message message to add
+     */
     public void addMessageToRoomAndSend(String message) {
         Room room = getRoom();
         try {
@@ -268,6 +343,11 @@ public class User {
 
     }
 
+    /**
+     * Find a room by its name
+     * @param roomToEnter name of the room to find
+     * @return the room if found, null otherwise
+     */
     public Room findRoom(String roomToEnter) {
         Room result = null;
         for(Room room: rooms.values()){
@@ -282,6 +362,13 @@ public class User {
         this.username = newUsername;
     }
 
+    /**
+     * Reconnect a peer
+     * @param peerUsernameRe username of the peer to reconnect
+     * @param peerPortRe port of the peer to reconnect
+     * @param socket socket of the peer to reconnect
+     * @return the peer if reconnected, null otherwise
+     */
     public User reconnectPeer(String peerUsernameRe, int peerPortRe, Socket socket) {
         UserTuple peerTuple = findPeerByUsername(peerUsernameRe);
         User peer = null;
@@ -303,6 +390,11 @@ public class User {
         }
     }
 
+    /**
+     * Find a peer by its username
+     * @param peerUsername username of the peer to find
+     * @return the peer if found, null otherwise
+     */
     private UserTuple findPeerByUsername(String peerUsername) {
         for(UserTuple peer:disconnectedPeers){
             if(peer.getUsername().equals(peerUsername))
@@ -319,6 +411,11 @@ public class User {
         this.userId = userId;
     }
 
+    /**
+     * Check if a peer is in the disconnected list
+     * @param peer peer to check
+     * @return true if the peer is in the disconnected list, false otherwise
+     */
     public boolean inDisconnected(String peer){
         for(UserTuple user:disconnectedPeers){
             if(user.getUsername().equals(peer))

@@ -33,10 +33,18 @@ public class Room implements Serializable{
         this.vectorClock = vectorClock;
     }
 
+    /**
+     * Increase the clock of the user
+     * @param user user to increase the clock
+     */
     public void incrementClock(UUID user){
         vectorClock.incrementUser(user);
     }
 
+    /**
+     * Add a message to the room
+     * @param message message to add
+     */
     public void addOwnMessage(RoomMessage message){
         messages.add(message);
         UUID sender = message.getSenderId();
@@ -46,6 +54,10 @@ public class Room implements Serializable{
         checkQueue();
     }
 
+    /**
+     * Add a message to the room
+     * @param message message to add
+     */
     public void addMessage(RoomMessage message) {       
         
         boolean valid = vectorClockCheck(message);
@@ -72,13 +84,13 @@ public class Room implements Serializable{
     }
 
     /**
-     * Questa funzione controlla che il vector clock di un messaggio arrivato sia consistente con il vector
-     * clock che l'utente ricevente il messaggio ha nella room.
-     * Se non è consistente il messaggio viene inserito in una coda di messaggi in attesa.
-     * Se è consistente viene aggiunto nella lista dei messaggi della stanza e si controlla se messaggi
-     * in attesa adesso siano consistenti
-     * @param message ricevuto
-     * @return se il messaggio ricevuto sia valido (consistente) o no
+     * This function checks whether the vector clock of an incoming message is consistent with the vector
+     * clock that the user receiving the message has in the room.
+     * If it's not consistent, the message is placed in a queue of waiting messages.
+     * If it's consistent, it's added to the list of messages in the room and checks if waiting messages
+     * are now consistent.
+     * @param message received
+     * @return whether the received message is valid (consistent) or not
      */
     private boolean vectorClockCheck(RoomMessage message){
         /* il controllo sul vector clock si fa qua
@@ -109,6 +121,13 @@ public class Room implements Serializable{
 
     }
 
+    /**
+     * This function checks if there are messages in the queue that can be inserted into the room
+     * after the arrival of other messages
+     * If a message is inserted, the function is called recursively to check if other messages can be inserted
+     *
+     * @return void
+     */
     private void checkQueue(){
         /* questo metodo controlla se dei messaggi nella coda possono essere inseriti nella stanza
          * dopo l'arrivo di altri messaggi */
@@ -153,6 +172,11 @@ public class Room implements Serializable{
         return vectorClock.copy();
     }
 
+    /**
+     * This function checks if a user is in the room
+     * @param userId user to check
+     * @return boolean
+     */
     public boolean contains(UUID userId){
         if(participants.contains(userId))
             return true;

@@ -14,6 +14,10 @@ public class PeerCLI {
     private static User user;
     private static final Scanner scanner = new Scanner(System.in);
 
+    /**
+     * Main method
+     * @param args arguments
+     */
     public static void main(String[] args) {
 
         System.out.print(Color.BLUE + "Enter your username: " + Color.RESET);
@@ -159,7 +163,10 @@ public class PeerCLI {
             }
         }
     }
-
+    /**
+     * Reconnect or change the username
+     * @return 1 if the user wants to reconnect, 2 if the user wants to change the username
+     */
     public static int ReconnectOrChangeUsername(){
         System.out.println(Color.RED + "Username already in use, where you already connected? (y/n)" + Color.RESET);
         while(true) {
@@ -178,6 +185,9 @@ public class PeerCLI {
         }
     }
 
+    /**
+     * Change the username
+     */
     public static void ChangeUsername() {
         System.out.println(Color.RED + "Username already in use, change username: " + Color.RESET);
         String newUsername = scanner.nextLine();
@@ -185,6 +195,11 @@ public class PeerCLI {
         System.out.println(Color.GREEN + "Username changed to: " + newUsername + Color.RESET);
     }
 
+    /**
+     * Check if the ip is valid
+     * @param ip ip to check
+     * @return true if the ip is valid, false otherwise
+     */
     private static boolean validIp(final String ip) {
         Pattern PATTERN = Pattern.compile(
         "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");

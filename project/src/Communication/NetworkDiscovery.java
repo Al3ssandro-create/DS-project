@@ -21,6 +21,16 @@ public class NetworkDiscovery {
         this.user = user;
     }
 
+    /**
+     * Handles incoming connections from peers in the network.
+     * This method is responsible for processing different types of messages received from peers.
+     * It performs actions based on the type of the message such as adding a new peer, reconnecting a peer,
+     * updating a heartbeat, initializing a room, adding a message to a room, changing a username, and deleting a room.
+     *
+     * @param socket The socket of the peer that the connection is established with.
+     * @param latch A CountDownLatch used for synchronization, ensuring certain operations complete before others proceed.
+     * @throws IOException If an input or output exception occurred.
+     */
     private void handleIncomingConnection(Socket socket, CountDownLatch latch) throws IOException {
         User handlingUser = null;
         try {
@@ -151,6 +161,13 @@ public class NetworkDiscovery {
         }
     }
 
+    /**
+     * Attempts to reconnect to a peer in the network.
+     * This method sends a reconnect message to the specified socket.
+     *
+     * @param socket The socket of the peer that the reconnection is attempted with.
+     * @throws RuntimeException If an input or output exception occurred during the reconnection attempt.
+     */
     private void reconnect(Socket socket) {
         try {
             sendReconnectMessage(socket);
@@ -159,6 +176,13 @@ public class NetworkDiscovery {
         }
     }
 
+    /**
+     * Changes the username of the user in the network.
+     * This method sends a discovery message to the specified socket after changing the username.
+     *
+     * @param socket The socket of the peer that the username change is communicated with.
+     * @throws RuntimeException If an input or output exception occurred during the username change.
+     */
     private void changeUsername(Socket socket) {
         try {
             sendDiscoveryMessage(socket);
@@ -166,7 +190,14 @@ public class NetworkDiscovery {
             throw new RuntimeException(e);
         }
     }
-    
+
+    /**
+     * Deletes a room from the network.
+     * This method sends a delete room message to the specified socket.
+     *
+     * @param roomID The ID of the room to be deleted.
+     * @param socket The socket of the peer that the room deletion is communicated with.
+     */
     public void deleteRoom(UUID roomID, Socket socket){
         try{
             DeleteRoomMessage roomDeleteMessage = new DeleteRoomMessage( user.getUsername(), user.getUserId(), 0, roomID);
@@ -175,7 +206,14 @@ public class NetworkDiscovery {
             throw new RuntimeException(e);
         }
     }
-    
+
+    /**
+     * Checks if a user exists in the network.
+     * This method iterates through the list of peers to check if the user exists.
+     *
+     * @param peerId The ID of the peer to be checked.
+     * @return true if the user exists, false otherwise.
+     */
     private boolean userExists(UUID peerId) {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(peerId)) {
@@ -185,6 +223,14 @@ public class NetworkDiscovery {
         return false;
     }
 
+    /**
+     * Sends a peer message to a specified user in the network.
+     * This method iterates through the list of peers to find the user and sends the message.
+     *
+     * @param userId The ID of the user to send the message to.
+     * @param message The message to be sent.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendPeerMessage(UUID userId, ConnectMessage message) throws IOException {
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(userId)) {
@@ -195,7 +241,15 @@ public class NetworkDiscovery {
         }
         System.out.println("User not found" );
     }
-    
+
+    /**
+     * Sends a peer reconnect message to a specified user in the network.
+     * This method iterates through the list of peers to find the user and sends the message.
+     *
+     * @param userId The ID of the user to send the message to.
+     * @param message The message to be sent.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendPeerReconnectMessage(UUID userId, ConnectMessage message) throws IOException{
         for (User user : this.user.listPeers()) {
             if (user.getUserId().equals(userId)) {
@@ -207,46 +261,105 @@ public class NetworkDiscovery {
         System.out.println("User not found" );
     }
 
+    /**
+     * Sends a change username or reconnect message to a specified socket.
+     * This method sends a change username or reconnect message to the specified socket.
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendChangeUsernameOrReconnectMessage(Socket socket) throws IOException {
         ConnectMessage changeUsernameOrReconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         changeUsernameOrReconnectMessage.setType(CHANGE_USERNAME_OR_RECONNECT);
         sendMessage(socket, changeUsernameOrReconnectMessage);
     }
 
+    /**
+     * Sends a reconnect message to a specified socket.
+     * This method sends a reconnect message to the specified socket.
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendReconnectMessage(Socket socket) throws IOException{
         ConnectMessage reconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         reconnectMessage.setType(RECONNECT);
         sendMessage(socket, reconnectMessage);
     }
 
+    /**
+     * Sends a response reconnect message to a specified socket.
+     * This method sends a response reconnect message to the specified socket.
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @param newId The new ID of the user.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendResponseReconnectMessage(Socket socket, UUID newId) throws IOException{
         ConnectMessage responseReconnectMessage = new ResponseReconnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId(), newId, user.getDisconnectedUser());//TODO: sequence number
         sendMessage(socket, responseReconnectMessage);
     }
 
+    /**
+     * Sends a discovery message to a specified socket.
+     * This method sends a discovery message to the specified socket.
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendDiscoveryMessage(Socket socket) throws IOException {
         ConnectMessage discoveryMessage = new ConnectMessage( 0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         discoveryMessage.setType(DISCOVERY);
         sendMessage(socket, discoveryMessage);
     }
 
+    /**
+     * Sends a response discovery message to a specified socket.
+     * This method sends a response discovery message to the specified socket.
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendResponseDiscoveryMessage(Socket socket) throws IOException {
         ConnectMessage responseDiscoveryMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         responseDiscoveryMessage.setType(RESPONSE_DISCOVERY);
         sendMessage(socket, responseDiscoveryMessage);
     }
 
+    /**
+     * Send a change username message to a specified socket.
+     * This method sends a change username message to the specified socket.
+     *
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     public void sendChangeUsernameMessage(Socket socket) throws IOException {
         ConnectMessage changeUsernameMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
         changeUsernameMessage.setType(CHANGE_USERNAME);
         sendMessage(socket, changeUsernameMessage);
     }
 
+    /**
+     * Sends a room initialization message to a specified socket.
+     * This method sends a room initialization message to the specified socket.
+     *
+     * @param room The room to be initialized.
+     * @param socket The socket of the peer that the message is sent to.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     public void sendRoom(Room room, Socket socket) throws IOException {
         RoomInitMessage roomMessage = new RoomInitMessage(0, user.getUsername(), user.getUserId(), room); // TODO: sequence number
         sendMessage(socket, roomMessage);
     }
 
+    /**
+     * Sends a room message to a specified socket.
+     * This method sends a room message to the specified socket.
+     *
+     * @param message The room message to be sent.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     public void sendRoomMessage(RoomMessage message) throws IOException {
 
         // Debugger mode per verificare che i vector clock funzionino bene anche empiricamente
@@ -287,6 +400,13 @@ public class NetworkDiscovery {
         }
     }
 
+    /**
+     * Receives a message from a specified socket.
+     * This method receives a message from the specified socket.
+     *
+     * @param socket The socket of the peer that the message is received from.
+     * @return The message received from the socket.
+     */
     private Message getMessage(Socket socket){
         ObjectInputStream in;
         try {
@@ -297,12 +417,29 @@ public class NetworkDiscovery {
         }
     }
 
+    /**
+     * Sends a message to a specified socket.
+     * This method sends a message to the specified socket.
+     *
+     * @param socket The socket of the peer that the message is sent to.
+     * @param message The message to be sent.
+     * @throws IOException If an input or output exception occurred during the message sending.
+     */
     private void sendMessage(Socket socket, Message message) throws IOException{
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(message);
         out.flush();
     }
 
+    /**
+     * Connects to a peer in the network.
+     * This method attempts to connect to a peer in the network by sending a discovery message.
+     * It retries the connection up to 5 times before closing the client.
+     *
+     * @param ipPeer The IP address of the peer to connect to.
+     * @param portPeer The port of the peer to connect to.
+     * @param sender The user that is connecting to the peer.
+     */
     public void connectToPeer(String ipPeer, int portPeer, User sender) {
         int MAX_RETRIES = 5;
         for(int i = 0; i < MAX_RETRIES; i++) {
@@ -343,6 +480,10 @@ public class NetworkDiscovery {
         }
     }
 
+    /**
+     * Starts listening for incoming connections.
+     * This method starts listening for incoming connections on the user's port.
+     */
     public void startListening() {
         try {
             serverSocket = new ServerSocket(user.getPort());
@@ -389,6 +530,12 @@ public class NetworkDiscovery {
         }
     }
 
+    /**
+     * Starts the heartbeat mechanism.
+     * This method starts the heartbeat mechanism by sending a heartbeat message every second.
+     *
+     * @param peerSocket The socket of the peer to send the heartbeat message to.
+     */
     public void startHeartbeat(Socket peerSocket) {
         new Thread(() -> {
             while (true) {
