@@ -10,8 +10,8 @@ public class RoomMessage extends Message {
     private final String content;
     private final VectorClock vectorClock;
     
-    public RoomMessage(String content, int sequenceNumber, String sender, UUID senderId, UUID roomId, VectorClock vc){
-        super(sender, senderId, sequenceNumber);
+    public RoomMessage(String content, String sender, UUID senderId, UUID roomId, VectorClock vc){
+        super(sender, senderId);
         setType(MessageType.ROOM_MESSAGE);
         this.content = content;
         this.roomId = roomId;

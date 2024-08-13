@@ -48,8 +48,6 @@ public class Room implements Serializable{
     public void addOwnMessage(RoomMessage message){
         messages.add(message);
         UUID sender = message.getSenderId();
-        int sequenceNumber = message.getSequenceNumber();
-        userSequenceNumbers.put(sender, sequenceNumber);
         //vectorClock.incrementUser(sender);
         checkQueue();
     }
@@ -71,8 +69,6 @@ public class Room implements Serializable{
             //System.out.print(Color.GREEN + "Vector clock dopo msg (updated):\n" + Color.RESET);
             //System.out.print(vectorClock.toString());
             UUID sender = message.getSenderId();
-            int sequenceNumber = message.getSequenceNumber();
-            userSequenceNumbers.put(sender, sequenceNumber);
             checkQueue();
         }else{
             messageQueue.add(message);

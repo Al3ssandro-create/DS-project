@@ -88,7 +88,7 @@ public class User {
      * @param receivedRoom room to add
      */
     public void addRoom(Room receivedRoom){
-        if(!rooms.keySet().contains(receivedRoom.getRoomId()) && receivedRoom.getParticipants().contains(this.userId)){
+        if(!rooms.containsKey(receivedRoom.getRoomId()) && receivedRoom.getParticipants().contains(this.userId)){
             Set<UUID> partecipant = new HashSet<>();
             for(User user: peers){
             if(receivedRoom.getParticipants().contains(user.getUserId()))
@@ -242,7 +242,6 @@ public class User {
             if(cleanUsers.contains(peer.getUsername()))
                 selected.add(peer.getUserId());
         }
-        System.out.println("selected are" + selected);
         return selected;
     }
 
@@ -283,7 +282,7 @@ public class User {
     public Map<UUID, Room> commonRooms(UUID peerId){
         Map<UUID, Room> commonRooms = new HashMap<>();
         for(UUID room : rooms.keySet()){
-            if(rooms.get(room).contains(peerId));
+            if(rooms.get(room).contains(peerId))
                 commonRooms.put(room, rooms.get(room));
         }
         return commonRooms;
@@ -334,7 +333,7 @@ public class User {
             //System.out.println(room.getVectorClock().toString());
             room.incrementClock(this.getUserId());
             VectorClock nowVector = room.getVectorClock();
-            RoomMessage preparedMessage = new RoomMessage(message, 0, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector); //TODO: sequence number
+            RoomMessage preparedMessage = new RoomMessage(message, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector); //TODO: sequence number
             room.addOwnMessage(preparedMessage);
             networkDiscovery.sendRoomMessage(preparedMessage);
         } catch (IOException e) {

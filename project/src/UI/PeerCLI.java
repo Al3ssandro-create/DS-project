@@ -3,14 +3,11 @@ package UI;
 import Color.Color;
 import Entities.Room;
 import Entities.User;
-import Message.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
 public class PeerCLI {
-    private int PORT;
     private static User user;
     private static final Scanner scanner = new Scanner(System.in);
 
@@ -76,7 +73,7 @@ public class PeerCLI {
             }
             scanner.nextLine();
             switch (choice) {
-                case 1:
+                case 1 -> {
                     System.out.print(Color.BLUE + "Creating room name: " + Color.RESET);
                     String roomName = scanner.nextLine();
                     if (roomName.isEmpty()) {
@@ -84,20 +81,20 @@ public class PeerCLI {
                         continue;
                     }
                     user.createRoom(roomName);
-                    break;
-                case 2:
+                }
+                case 2 -> {
                     System.out.println(Color.GREEN);
                     user.listRooms();
                     System.out.println(Color.RESET);
-                    break;
-                case 3:
+                }
+                case 3 -> {
                     System.out.print(Color.BLUE + "Enter room name: " + Color.RESET);
                     String roomToEnter = scanner.nextLine();
                     Room room = user.findRoom(roomToEnter);
-                    if(room == null){
+                    if (room == null) {
                         System.out.println(Color.RED + "Room not found" + Color.RESET);
                         break;
-                    }else{
+                    } else {
                         user.setRoom(room);
                         user.viewChat(roomToEnter);
                     }
@@ -118,48 +115,45 @@ public class PeerCLI {
                         }
                         scanner.nextLine();
                         switch (roomChoice) {
-                            case 1:
+                            case 1 -> {
                                 System.out.print(Color.BLUE + "Enter your message: " + Color.RESET);
                                 String message = scanner.nextLine();
                                 user.addMessageToRoomAndSend(message);
                                 user.viewChat(roomToEnter);
-                                break;
-                            case 2:
-                                user.viewChat(roomToEnter);
-                                break;
-                            case 3:
+                            }
+                            case 2 -> user.viewChat(roomToEnter);
+                            case 3 -> {
                                 System.out.println(Color.BLUE + "Exiting room..." + Color.RESET);
                                 user.setRoom(null);
-                                break;
-                            default:
-                                System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 3" + Color.RESET);
-                                break;
+                            }
+                            default ->
+                                    System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 3" + Color.RESET);
                         }
                     }
-                    break;
-                case 4:
+                }
+                case 4 -> {
                     System.out.println(Color.GREEN);
-                    if(user.listPeers().isEmpty()){
+                    if (user.listPeers().isEmpty()) {
                         System.out.println(Color.RED + "No peers found" + Color.RESET);
                     }
-                    for(User peer: user.listPeers()){
-                        System.out.println(Color.GREEN + peer.getUsername() + " on port: "+ peer.getPort() +"\n" + Color.RESET);
+                    for (User peer : user.listPeers()) {
+                        System.out.println(Color.GREEN + peer.getUsername() + " on port: " + peer.getPort() + "\n" + Color.RESET);
                     }
                     System.out.println(Color.RESET);
-                    break;
-                case 5:
+                }
+                case 5 -> {
                     System.out.print(Color.BLUE + "Enter the name of the room you want to delete: " + Color.RESET);
                     String roomToDeleteName = scanner.nextLine();
                     Room roomToDelete = user.findRoom(roomToDeleteName);
                     user.deleteRoomAndForward(roomToDelete);
-                    break;
-                case 6:
+                }
+                case 6 -> {
                     System.out.println(Color.BLUE + "Exiting..." + Color.RESET);
                     scanner.close();
                     System.exit(0); // Exit the program
-                default:
-                    System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 5." + Color.RESET);
-                    break;
+                }
+                default ->
+                        System.out.println(Color.RED + "Invalid choice. Please enter a number between 1 and 5." + Color.RESET);
             }
         }
     }

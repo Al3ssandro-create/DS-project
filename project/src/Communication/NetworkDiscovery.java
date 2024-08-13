@@ -73,7 +73,7 @@ public class NetworkDiscovery {
 
                                 for (User peerUser : user.listPeers()) {
                                     if (!peerUser.getUserId().equals(peerId)) {
-                                        sendPeerMessage(peerUser.getUserId(), new ConnectMessage(0, peerPort, peerAddress, peerUsername, peerId));
+                                        sendPeerMessage(peerUser.getUserId(), new ConnectMessage(peerPort, peerAddress, peerUsername, peerId));
                                     }
                                 }
                             }else if(responseMessage.getType().equals(PEER)){
@@ -98,7 +98,7 @@ public class NetworkDiscovery {
                             sendResponseReconnectMessage(socket, handlingUser.getUserId());
                             for (User peerUser : user.listPeers()) {
                                 if (!peerUser.getUserId().equals(handlingUser.getUserId())) {
-                                    sendPeerReconnectMessage(peerUser.getUserId(), new ConnectMessage(0, peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
+                                    sendPeerReconnectMessage(peerUser.getUserId(), new ConnectMessage(peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
                                 }
                             }
                             Map<UUID, Room> rooms = user.getRooms();
@@ -113,14 +113,6 @@ public class NetworkDiscovery {
                             String peerAddressReP = ((ConnectMessage) responseMessage).getIp();
                             user.reconnectPeerWithID(peerUsernameReP);
                             user.startConnection(peerAddressReP, peerPortReP);
-                            /*UUID reconnectedUUID = responseMessage.getSenderId();
-                            User reconnected = user.findPeerByUUID(reconnectedUUID);
-                            Map<UUID, Room> roomsPeer = user.getRooms();
-                            if(!user.commonRooms(reconnected.getUserId()).isEmpty()){
-                                for(UUID commonRoomId : user.commonRooms(reconnected.getUserId()).keySet()){
-                                        sendRoom(roomsPeer.get(commonRoomId), reconnected.getListeningSocket());
-                                }
-                            } */
                             break;
                         case HEARTBEAT:
                             if (handlingUser != null) {
@@ -200,7 +192,7 @@ public class NetworkDiscovery {
      */
     public void deleteRoom(UUID roomID, Socket socket){
         try{
-            DeleteRoomMessage roomDeleteMessage = new DeleteRoomMessage( user.getUsername(), user.getUserId(), 0, roomID);
+            DeleteRoomMessage roomDeleteMessage = new DeleteRoomMessage( user.getUsername(), user.getUserId(), roomID);
             sendMessage(socket, roomDeleteMessage);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -269,7 +261,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendChangeUsernameOrReconnectMessage(Socket socket) throws IOException {
-        ConnectMessage changeUsernameOrReconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        ConnectMessage changeUsernameOrReconnectMessage = new ConnectMessage(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());
         changeUsernameOrReconnectMessage.setType(CHANGE_USERNAME_OR_RECONNECT);
         sendMessage(socket, changeUsernameOrReconnectMessage);
     }
@@ -282,7 +274,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendReconnectMessage(Socket socket) throws IOException{
-        ConnectMessage reconnectMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        ConnectMessage reconnectMessage = new ConnectMessage(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());
         reconnectMessage.setType(RECONNECT);
         sendMessage(socket, reconnectMessage);
     }
@@ -296,7 +288,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendResponseReconnectMessage(Socket socket, UUID newId) throws IOException{
-        ConnectMessage responseReconnectMessage = new ResponseReconnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId(), newId, user.getDisconnectedUser());//TODO: sequence number
+        ConnectMessage responseReconnectMessage = new ResponseReconnectMessage(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId(), newId, user.getDisconnectedUser());
         sendMessage(socket, responseReconnectMessage);
     }
 
@@ -308,7 +300,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendDiscoveryMessage(Socket socket) throws IOException {
-        ConnectMessage discoveryMessage = new ConnectMessage( 0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        ConnectMessage discoveryMessage = new ConnectMessage(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());
         discoveryMessage.setType(DISCOVERY);
         sendMessage(socket, discoveryMessage);
     }
@@ -321,7 +313,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendResponseDiscoveryMessage(Socket socket) throws IOException {
-        ConnectMessage responseDiscoveryMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        ConnectMessage responseDiscoveryMessage = new ConnectMessage(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());
         responseDiscoveryMessage.setType(RESPONSE_DISCOVERY);
         sendMessage(socket, responseDiscoveryMessage);
     }
@@ -330,12 +322,11 @@ public class NetworkDiscovery {
      * Send a change username message to a specified socket.
      * This method sends a change username message to the specified socket.
      *
-     *
      * @param socket The socket of the peer that the message is sent to.
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     public void sendChangeUsernameMessage(Socket socket) throws IOException {
-        ConnectMessage changeUsernameMessage = new ConnectMessage(0, serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());//TODO: sequence number
+        ConnectMessage changeUsernameMessage = new ConnectMessage(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress(), user.getUsername(), user.getUserId());
         changeUsernameMessage.setType(CHANGE_USERNAME);
         sendMessage(socket, changeUsernameMessage);
     }
@@ -349,7 +340,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     public void sendRoom(Room room, Socket socket) throws IOException {
-        RoomInitMessage roomMessage = new RoomInitMessage(0, user.getUsername(), user.getUserId(), room); // TODO: sequence number
+        RoomInitMessage roomMessage = new RoomInitMessage(user.getUsername(), user.getUserId(), room);
         sendMessage(socket, roomMessage);
     }
 
@@ -393,8 +384,6 @@ public class NetworkDiscovery {
                 } catch (InterruptedException e) {
                     System.err.println("Sleep was interrupted.");
                 }
-                //System.out.println(Color.RED + "Vector proprio prima di mandare:" + message.getContent() + " a " + userId + Color.RESET);
-                //System.out.println(message.getVectorClock().toString());
                 sendMessage(user.findPeerByUUID(userId).getListeningSocket(), message);
             }
         }
@@ -541,7 +530,7 @@ public class NetworkDiscovery {
             while (true) {
                 try {
                     Thread.sleep(1000);
-                    sendMessage(peerSocket, new HeartbeatMessage(user.getUsername(), 0, user.getUserId())); // TODO: sequence number
+                    sendMessage(peerSocket, new HeartbeatMessage(user.getUsername(), user.getUserId()));
                 } catch (IOException | InterruptedException e) {
                     break;
                 }
