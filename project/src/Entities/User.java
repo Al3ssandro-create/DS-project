@@ -89,11 +89,6 @@ public class User {
      */
     public void addRoom(Room receivedRoom){
         if(!rooms.containsKey(receivedRoom.getRoomId()) && receivedRoom.getParticipants().contains(this.userId)){
-            Set<UUID> partecipant = new HashSet<>();
-            for(User user: peers){
-            if(receivedRoom.getParticipants().contains(user.getUserId()))
-                partecipant.add(user.getUserId());
-            }
             Room room = new Room(receivedRoom.getName(), receivedRoom.getParticipants(), receivedRoom.getRoomId(), receivedRoom.getMessages(), receivedRoom.getVectorClock());
             rooms.put(room.getRoomId(), room);
         }
@@ -325,12 +320,7 @@ public class User {
     public void addMessageToRoomAndSend(String message) {
         Room room = getRoom();
         try {
-            //ho messo tutto nel try perché incremento del clock e invio del messaggio è un'operazione atomica
-            //System.out.println(Color.GREEN + "Vector clock prima dell'incremento" + Color.RESET);
-            //System.out.println(room.getVectorClock().toString());
             room.getVectorClock().incrementUser(userId);
-            //System.out.println(Color.GREEN + "Vector clock dopo dell'incremento" + Color.RESET);
-            //System.out.println(room.getVectorClock().toString());
             room.incrementClock(this.getUserId());
             VectorClock nowVector = room.getVectorClock();
             RoomMessage preparedMessage = new RoomMessage(message, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector); //TODO: sequence number

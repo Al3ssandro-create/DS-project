@@ -23,8 +23,7 @@ public class VectorClock implements Serializable{
         for(UUID user : vector.keySet()){
             copy.put(user, vector.get(user));
         }
-        VectorClock copyVectorClock = new VectorClock(copy);
-        return copyVectorClock;
+        return new VectorClock(copy);
     }
 
     public void updateUser(UUID userId, int val){
@@ -50,9 +49,9 @@ public class VectorClock implements Serializable{
 
     @Override
     public String toString(){
-        String clock = "";
+        StringBuilder clock = new StringBuilder();
         for(UUID user: vector.keySet())
-            clock += user + ": " + vector.get(user) + "\n";
-        return clock;
+            clock.append(user).append(": ").append(vector.get(user)).append("\n");
+        return clock.toString();
     }
 }

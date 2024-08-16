@@ -11,7 +11,6 @@ public class Room implements Serializable{
     private final String name;
     private final Set<UUID> participants;
     private List<RoomMessage> messages;
-    private Map<UUID, Integer> userSequenceNumbers;
     private VectorClock vectorClock;
     private Set<RoomMessage> messageQueue = new HashSet<>();
     
@@ -20,7 +19,6 @@ public class Room implements Serializable{
         this.name = name;
         this.participants = new HashSet<>(participants);
         this.messages = new ArrayList<>();
-        this.userSequenceNumbers = new HashMap<>();
         this.vectorClock = new VectorClock(participants);       
     }
 
@@ -29,7 +27,6 @@ public class Room implements Serializable{
         this.name = name;
         this.participants = new HashSet<>(participants);
         this.messages = new ArrayList<>(messages);
-        this.userSequenceNumbers = new HashMap<>(); 
         this.vectorClock = vectorClock;
     }
 
@@ -47,8 +44,6 @@ public class Room implements Serializable{
      */
     public void addOwnMessage(RoomMessage message){
         messages.add(message);
-        UUID sender = message.getSenderId();
-        //vectorClock.incrementUser(sender);
         checkQueue();
     }
 
@@ -59,21 +54,13 @@ public class Room implements Serializable{
     public void addMessage(RoomMessage message) {       
         
         boolean valid = vectorClockCheck(message);
-        //System.out.print(Color.GREEN + "Vector clock ricevuto msg:\n" + Color.RESET);
-        //System.out.print(message.getVectorClock().toString());
-        //System.out.println(Color.BLUE + "Valid: " + valid + Color.RESET);
-
         if(valid){
             messages.add(message);
             vectorClock.update(message.getVectorClock());
-            //System.out.print(Color.GREEN + "Vector clock dopo msg (updated):\n" + Color.RESET);
-            //System.out.print(vectorClock.toString());
-            UUID sender = message.getSenderId();
-            checkQueue();
         }else{
             messageQueue.add(message);
-            checkQueue();
         }
+        checkQueue();
         for(RoomMessage msg: messageQueue){
             System.out.println(Color.RED + msg.getSender() + ": " + msg.getContent() + Color.RESET);
         }
@@ -89,27 +76,15 @@ public class Room implements Serializable{
      * @return whether the received message is valid (consistent) or not
      */
     private boolean vectorClockCheck(RoomMessage message){
-        /* il controllo sul vector clock si fa qua
-         * la versione di vector clocks usata è quella in cui il clock è incrementato solo
-         * quando un messaggio è inviato. Su ricesione solo merge, non incremento */
         Map<UUID, Integer> receivedVector = message.getVectorClock().getVector();
         Map<UUID, Integer> thisVector = vectorClock.getVector();
-        //System.out.print(Color.GREEN + "Vector clock nella stanza:\n" + Color.RESET);
-        //System.out.print(vectorClock.toString());
         boolean valid = true;
-        //System.out.println(Color.BLUE + "Sender user " + message.getSenderId() + "\n" + Color.RESET); 
-        /*controllo che il clock del messaggio sia:
-            - minore o uguale in tutti gli altri peers
-            - uguale al clock che si ha più 1 per il sender
-         se non è così mettere il messagio in coda in attesa che queste condizioni siano vere*/
         for(UUID peer: receivedVector.keySet()){
             if((!message.getSenderId().equals(peer)) && (receivedVector.get(peer) > thisVector.get(peer))){
                 valid = false;
-                System.out.println(Color.RED + "Erorre clock utente " + peer + "\n" + Color.RESET);
             }
             else if((message.getSenderId().equals(peer)) && (receivedVector.get(peer) != (thisVector.get(peer) + 1))){
                 valid = false;
-                System.out.println(Color.RED + "Erorre clock sender " + peer + "\n" + Color.RESET);
             }
                 
         }
@@ -156,10 +131,6 @@ public class Room implements Serializable{
         return messages;
     }
 
-    public Map<UUID, Integer> getUserSequenceNumbers() {
-        return userSequenceNumbers;
-    }
-
     public UUID getRoomId() {
         return roomId;
     }
@@ -167,6 +138,8 @@ public class Room implements Serializable{
     public VectorClock getVectorClock(){
         return vectorClock.copy();
     }
+
+    public Set<RoomMessage> getMessageQueue(){ return messageQueue;}
 
     /**
      * This function checks if a user is in the room
