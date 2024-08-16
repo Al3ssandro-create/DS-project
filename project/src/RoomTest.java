@@ -1,4 +1,3 @@
-package test;
 
 import Entities.*;
 import Vector.*;
@@ -51,7 +50,7 @@ class RoomTest {
     @Test
     void testAddMessage() {
         VectorClock vectorClock = new VectorClock(room.getParticipants());
-        vectorClock.incrementUser(user1); // Increment clock for user1
+        vectorClock.incrementUser(user1);
 
         RoomMessage message = new RoomMessage("Hello", "user1", user1, room.getRoomId(), vectorClock);
 
@@ -75,13 +74,13 @@ class RoomTest {
         VectorClock vcBefore = room.getVectorClock().copy();
         room.incrementClock(user1);
         VectorClock vcAfter = room.getVectorClock();
-        assertTrue(vcAfter.getVector().get(user1) > vcBefore.getVector().get(user1));
+        assertEquals((int) vcAfter.getVector().get(user1), vcBefore.getVector().get(user1) + 1);
     }
 
     @Test
     void testAddOwnMessage() {
         VectorClock vectorClock = new VectorClock(room.getParticipants());
-        vectorClock.incrementUser(user1); // Simulate user1 sending a message
+        vectorClock.incrementUser(user1);
 
         RoomMessage message = new RoomMessage("Hi there", "user1", user1, room.getRoomId(), vectorClock);
 
@@ -107,36 +106,48 @@ class RoomTest {
 
     @Test
     void testAddMessageWithValidClock() {
-        // Initialize vector clock and increment it to simulate a valid state.
         VectorClock vectorClock = room.getVectorClock().copy();
         vectorClock.incrementUser(user1);
 
-        // Create a message with the valid vector clock.
         RoomMessage message = new RoomMessage("Valid Message", "user1", user1, room.getRoomId(), vectorClock);
 
-        // Add the message to the room.
         room.addMessage(message);
 
-        // Check that the message was added.
         assertEquals(1, room.getMessages().size());
         assertEquals("Valid Message", room.getMessages().get(0).getContent());
     }
 
     @Test
     void testAddMessageWithInvalidClock() {
-        // Initialize vector clock and simulate an invalid state.
         VectorClock vectorClock = room.getVectorClock().copy();
         vectorClock.incrementUser(user1);
         vectorClock.incrementUser(user1); // Increment twice to simulate invalid state.
 
-        // Create a message with the invalid vector clock.
         RoomMessage message = new RoomMessage("Invalid Message", "user1", user1, room.getRoomId(), vectorClock);
 
-        // Add the message to the room.
         room.addMessage(message);
 
-        // Check that the message was not added because of the invalid clock.
-        // Assuming Room's addMessage method validates the clock and rejects invalid messages.
+        assertEquals(1, room.getMessageQueue().size());
         assertEquals(0, room.getMessages().size(), "Message with invalid clock should not be added.");
+    }
+
+    @Test
+    void testAddInvalidMessageAfterCorrectClock(){
+        VectorClock vectorClock = room.getVectorClock().copy();
+        VectorClock vectorClock1 = room.getVectorClock().copy();
+        vectorClock.incrementUser(user1);
+        RoomMessage latterMessage = new RoomMessage("Valid Message", "user1", user1, room.getRoomId(), vectorClock);
+
+        vectorClock1.incrementUser(user1);
+        vectorClock1.incrementUser(user1);
+        RoomMessage earlierMessage = new RoomMessage("Invalid Message", "user1", user1, room.getRoomId(), vectorClock1);
+
+        room.addMessage(earlierMessage);
+        assertEquals(1, room.getMessageQueue().size());
+        assertEquals(0, room.getMessages().size(), "Message with invalid clock should not be added.");
+
+        room.addMessage(latterMessage);
+        assertEquals(2, room.getMessages().size());
+        assertEquals(0, room.getMessageQueue().size());
     }
 }

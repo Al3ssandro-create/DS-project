@@ -1,6 +1,5 @@
 package Entities;
-import java.io.IOException;
-import java.io.PrintWriter;
+
 import java.io.Serializable;
 import java.util.*;
 import Message.*;
@@ -100,8 +99,6 @@ public class Room implements Serializable{
      * @return void
      */
     private void checkQueue(){
-        /* questo metodo controlla se dei messaggi nella coda possono essere inseriti nella stanza
-         * dopo l'arrivo di altri messaggi */
         boolean update = false;
         for(RoomMessage message: messageQueue){
             if(vectorClockCheck(message)){
@@ -147,9 +144,6 @@ public class Room implements Serializable{
      * @return boolean
      */
     public boolean contains(UUID userId){
-        if(participants.contains(userId))
-            return true;
-        else   
-            return false;
+        return participants.contains(userId);
     }
 }

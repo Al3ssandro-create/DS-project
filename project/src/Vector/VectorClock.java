@@ -3,8 +3,6 @@ package Vector;
 import java.io.Serializable;
 import java.util.*;
 
-//questa classe ha un mappa a cui associa ad ogni uiserID il suo clock scalare
-//creando così il clock vettoriale
 public class VectorClock implements Serializable{
     private Map<UUID, Integer> vector = new HashMap<>();
 

@@ -1,4 +1,3 @@
-package test;
 
 import Vector.*;
 import org.junit.jupiter.api.BeforeEach;

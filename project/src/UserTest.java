@@ -1,10 +1,11 @@
-package test;
+
 
 import Entities.*;
 import Message.*;
 import Vector.*;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.Socket;
@@ -14,12 +15,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class UserTest {
 
-    private User user;
-    private User peer;
-    private Room room;
+    private static User user;
+    private static User peer;
+    private static Room room;
 
-    @BeforeEach
-    public void setUp() {
+    @BeforeAll
+    public static void setUp() {
         user = new User("TestUser", 8080);
         peer = new User("PeerUser", 9090);
         room = new Room("TestRoom", new HashSet<>(Arrays.asList(user.getUserId(), peer.getUserId())));
@@ -42,6 +43,7 @@ public class UserTest {
 
     @Test
     public void testAddRoomNotParticipant() {
+        user.getRooms().clear();
         Room roomNotIn = new Room("TestRoom2", new HashSet<>(Collections.singletonList(peer.getUserId())));
         user.addRoom(roomNotIn);
         assertEquals(0, user.getRooms().size());
@@ -50,7 +52,7 @@ public class UserTest {
 
     @Test
     public void testDeleteRoom() {
-        user.getRooms().put(room.getRoomId(), room);
+        user.addRoom(room);
         user.deleteRoom(room.getRoomId());
         assertFalse(user.getRooms().containsKey(room.getRoomId()));
     }
@@ -102,7 +104,7 @@ public class UserTest {
 
     @Test
     public void testFindRoom() {
-        user.getRooms().put(room.getRoomId(), room);
+        user.addRoom(room);
         Room foundRoom = user.findRoom("TestRoom");
         assertNotNull(foundRoom);
         assertEquals(room.getRoomId(), foundRoom.getRoomId());
@@ -152,5 +154,45 @@ public class UserTest {
     public void testSetAndGetRoom() {
         user.setRoom(room);
         assertEquals(room, user.getRoom());
+    }
+
+    @Test
+    public void testCommonRooms(){
+        User user1 = new User("TestUser", 8081);
+        User peer1 = new User("PeerUser1", 9091);
+        User peer2 = new User("PeerUser2", 9092);
+        Room room1 = new Room("TestRoom1", new HashSet<>(Arrays.asList(user1.getUserId(), peer1.getUserId())));
+        Room room2 = new Room("TestRoom2", new HashSet<>(Arrays.asList(user1.getUserId(), peer2.getUserId())));
+        user1.addRoom(room1);
+        user1.addRoom(room2);
+
+        assertEquals(2, user1.getRooms().size());
+        assertEquals(1, user1.commonRooms(peer1.getUserId()).size());
+    }
+
+    @Test
+    public void testInDisconnected(){
+        User user1 = new User("TestUser", 8180);
+        UserTuple peer1 = new UserTuple(UUID.randomUUID(), "Peer1");
+        Set<UserTuple> setPeer = new HashSet<>();
+        setPeer.add(peer1);
+
+        user1.setDisconnectedUser(setPeer);
+        assertTrue(user1.inDisconnected("Peer1"));
+    }
+
+    @Test
+    public void testReconnectPeerWithId(){
+        User user1 = new User("TestUser", 8280);
+        UUID peerUUID = UUID.randomUUID();
+        UserTuple peer1 = new UserTuple(peerUUID, "Peer1");
+        Set<UserTuple> setPeer = new HashSet<>();
+        setPeer.add(peer1);
+
+        user1.setDisconnectedUser(setPeer);
+        assertTrue(user1.inDisconnected("Peer1"));
+
+        user1.reconnectPeerWithID("Peer1");
+        assertFalse(user1.inDisconnected("Peer1"));
     }
 }
