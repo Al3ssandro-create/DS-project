@@ -1,9 +1,7 @@
 package Message;
 
 import Entities.Room;
-import Entities.User;
 
-import java.util.Set;
 import java.util.UUID;
 
 public class RoomInitMessage extends Message {

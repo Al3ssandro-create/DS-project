@@ -1,13 +1,14 @@
 package Entities;
 
+import Color.Color;
+import Communication.NetworkDiscovery;
+import Message.RoomMessage;
+import Vector.VectorClock;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.*;
-import Color.Color;
-import Communication.NetworkDiscovery;
-import Message.*;
-import Vector.VectorClock;
 
 public class User {
     private UUID userId;

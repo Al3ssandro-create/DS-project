@@ -4,7 +4,7 @@ import Color.Color;
 import Entities.Room;
 import Entities.User;
 
-import java.util.*;
+import java.util.Scanner;
 import java.util.regex.Pattern;
 
 public class PeerCLI {

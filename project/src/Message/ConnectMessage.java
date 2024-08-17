@@ -1,7 +1,5 @@
 package Message;
 
-import Entities.User;
-
 import java.util.UUID;
 
 public class ConnectMessage extends Message {

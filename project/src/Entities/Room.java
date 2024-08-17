@@ -1,10 +1,11 @@
 package Entities;
 
+import Color.Color;
+import Message.RoomMessage;
+import Vector.VectorClock;
+
 import java.io.Serializable;
 import java.util.*;
-import Message.*;
-import Vector.VectorClock;
-import Color.Color;
 public class Room implements Serializable{
     private final UUID roomId;
     private final String name;

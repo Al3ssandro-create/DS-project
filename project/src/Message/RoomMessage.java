@@ -1,6 +1,5 @@
 package Message;
 
-import Entities.User;
 import Vector.VectorClock;
 
 import java.util.UUID;

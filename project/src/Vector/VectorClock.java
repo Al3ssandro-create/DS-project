@@ -1,7 +1,10 @@
 package Vector;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class VectorClock implements Serializable{
     private Map<UUID, Integer> vector = new HashMap<>();

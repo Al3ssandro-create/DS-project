@@ -1,9 +1,8 @@
 package Message;
+
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import Message.*;
 public abstract class Message implements Serializable {
     private final UUID messageId;
     private final String senderUsername;

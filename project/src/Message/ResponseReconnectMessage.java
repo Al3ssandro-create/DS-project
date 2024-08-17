@@ -2,7 +2,6 @@ package Message;
 
 import Entities.UserTuple;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
