@@ -42,7 +42,6 @@ public class NetworkDiscovery {
                 }
                 Message responseMessage = getMessage(socket);
                 if(responseMessage != null) {
-                    //System.out.println(responseMessage + responseMessage.getType());
                     switch (responseMessage.getType()) {
                         case RESPONSE_RECONNECT:
                             user.setUserId(((ResponseReconnectMessage) responseMessage).getNewUserId());
@@ -142,6 +141,11 @@ public class NetworkDiscovery {
                         case DELETE_ROOM:
                             user.deleteRoom(((DeleteRoomMessage) responseMessage).getRoomId());
                             break;
+                        /*case DISCONNECTION:
+                            user.removePeer(responseMessage.getSenderId());
+                            socket.close();
+                            cycle = false;
+                            break;*/
                         default:
                             System.out.println(Color.RED + "Received unknown message type" + Color.RESET);
                             break;
@@ -537,5 +541,16 @@ public class NetworkDiscovery {
             }
         }, "heartbeat_").start();
     }
+
+    /*public void disconnect(Socket peerSocket){
+        DisconnectMessage message = new DisconnectMessage(user.getUsername(), user.getUserId());
+        try {
+            sendMessage(peerSocket, message);
+            serverSocket.close();
+        }catch (IOException e){
+            e.printStackTrace();
+            System.out.print(Color.RED + "Error in closing the connection" + Color.RESET);
+        }
+    }*/
 
 }

@@ -182,6 +182,16 @@ public class User {
         }
     }
 
+    /*
+     * Close the connection with all the peers
+     * in case of graceful disconnection
+     */
+    /*public void closeConnection(){
+        for(User peer: peers){
+            networkDiscovery.disconnect(peer.getListeningSocket());
+        }
+    }*/
+
     /**
      * Start the connection with a peer
      * @param ipPeer IP of the peer to connect to
@@ -294,10 +304,6 @@ public class User {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public Socket getListeningSocket() {
         return listeningSocket;
     }
@@ -322,7 +328,7 @@ public class User {
             room.getVectorClock().incrementUser(userId);
             room.incrementClock(this.getUserId());
             VectorClock nowVector = room.getVectorClock();
-            RoomMessage preparedMessage = new RoomMessage(message, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector); //TODO: sequence number
+            RoomMessage preparedMessage = new RoomMessage(message, this.getUsername(), this.getUserId(), room.getRoomId(), nowVector);
             room.addOwnMessage(preparedMessage);
             networkDiscovery.sendRoomMessage(preparedMessage);
         } catch (IOException e) {
@@ -389,10 +395,6 @@ public class User {
                 return peer;
         }
         return null;
-    }
-
-    private void setListeningSocket(Socket socket) {
-        this.listeningSocket = socket;
     }
 
     public void setUserId(UUID userId) {

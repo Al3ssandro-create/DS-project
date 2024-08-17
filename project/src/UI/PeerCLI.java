@@ -149,6 +149,7 @@ public class PeerCLI {
                 }
                 case 6 -> {
                     System.out.println(Color.BLUE + "Exiting..." + Color.RESET);
+                    //user.closeConnection();
                     scanner.close();
                     System.exit(0); // Exit the program
                 }

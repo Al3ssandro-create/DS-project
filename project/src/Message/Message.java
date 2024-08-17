@@ -23,19 +23,10 @@ public abstract class Message implements Serializable {
     public String getType(){
         return type;
     }
-    public UUID getMessageId() {
-        return messageId;
-    }
     public String getSender(){
         return senderUsername;
     }
     public UUID getSenderId(){
         return senderId;
-    }
-    public String getRoomName(){
-        return roomName;
-    }
-    public Set<String> getUsers(){
-        return users;
     }
 }
