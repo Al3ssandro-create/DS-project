@@ -372,7 +372,7 @@ public class NetworkDiscovery {
             System.out.println(Color.GRAY + "Wanna enter debug mode? (y/n)" + Color.RESET);
             debug = scanner.nextLine();
             if(debug.equals("y") || debug.equals("Y")){
-                Integer delay;
+                int delay;
                 for (UUID userId : user.getRoom().getParticipants()){
                     if(!userId.equals(user.getUserId())){
                         System.out.println(Color.GRAY + "Select the delay time for " + userId + " (in milliseconds)" + Color.RESET);
@@ -517,6 +517,7 @@ public class NetworkDiscovery {
                         }, "handleIncomingConnectionServerSide_").start();
                     } catch (IOException e) {
                         e.printStackTrace();
+                        System.out.println(Color.RED + "Error in establishing the connection" + Color.RESET);
                     }
                 }
         } catch (IOException e) {

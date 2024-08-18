@@ -7,8 +7,6 @@ public abstract class Message implements Serializable {
     private final UUID messageId;
     private final String senderUsername;
     private final UUID senderId;
-    private String roomName;
-    private Set<String> users;
     private String type; //enum to see what type of message is sent
 
     public Message(String senderUsername, UUID  senderId) {

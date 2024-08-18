@@ -49,7 +49,7 @@ public class User {
     /**
      * Create a room and send it to the selected users in order that they can add it to their rooms
      *
-     * @param name
+     * @param name name of the room to create
      */
     public void createRoom(String name){
         System.out.println(Color.BLUE + "Select the partecipants of the room:\n" + Color.RESET);
@@ -107,8 +107,6 @@ public class User {
                     User peerToNotice = findPeerByUUID(userId);
                     if(peerToNotice != null) {
                         networkDiscovery.deleteRoom(room.getRoomId(), peerToNotice.getListeningSocket());
-                    }else{
-                        //TODO:LUI entra qua ma non so perchè, ma allo stesso tempo funziona
                     }
                 }
             }
@@ -151,6 +149,11 @@ public class User {
         }
     }
 
+    /**
+     * Show all the chat of a given room
+     *
+     * @param roomName name of the room to see the chat of
+     */
     public void viewChat(String roomName){
         Room room = findRoom(roomName);
         if(room != null){
