@@ -52,7 +52,6 @@ public class NetworkDiscovery {
                             latch.countDown();
                         case DISCOVERY:
                         case PEER:
-                            System.out.println(responseMessage.getType() + " message received from " + responseMessage.getSender() + " (" + responseMessage.getSenderId() + ")");
                             String peerUsername = responseMessage.getSender();
                             UUID peerId = responseMessage.getSenderId();
                             int peerPort = ((ConnectMessage) responseMessage).getPort();
@@ -278,9 +277,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendChangeUsernameOrReconnectMessage(Socket socket) throws IOException {
-        System.out.println("serverSocket:" + serverSocket.getInetAddress().getHostAddress());
-        System.out.println("socket remote address:" + socket.getInetAddress().getHostAddress());
-        System.out.println("socket local address:" + socket.getLocalAddress().getHostAddress());
         ConnectMessage changeUsernameOrReconnectMessage = new ConnectMessage(serverSocket.getLocalPort(), socket.getLocalAddress().getHostAddress(), user.getUsername(), user.getUserId());
         changeUsernameOrReconnectMessage.setType(CHANGE_USERNAME_OR_RECONNECT);
         sendMessage(socket, changeUsernameOrReconnectMessage);
@@ -294,9 +290,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendReconnectMessage(Socket socket) throws IOException{
-        System.out.println("serverSocket:" + serverSocket.getInetAddress().getHostAddress());
-        System.out.println("socket remote address:" + socket.getInetAddress().getHostAddress());
-        System.out.println("socket local address:" + socket.getLocalAddress().getHostAddress());
         ConnectMessage reconnectMessage = new ConnectMessage(serverSocket.getLocalPort(), socket.getLocalAddress().getHostAddress(), user.getUsername(), user.getUserId());
         reconnectMessage.setType(RECONNECT);
         sendMessage(socket, reconnectMessage);
@@ -311,9 +304,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendResponseReconnectMessage(Socket socket, UUID newId) throws IOException{
-        System.out.println("serverSocket:" + serverSocket.getInetAddress().getHostAddress());
-        System.out.println("socket remote address:" + socket.getInetAddress().getHostAddress());
-        System.out.println("socket local address:" + socket.getLocalAddress().getHostAddress());
         ConnectMessage responseReconnectMessage = new ResponseReconnectMessage(serverSocket.getLocalPort(), socket.getLocalAddress().getHostAddress(), user.getUsername(), user.getUserId(), newId, user.getDisconnectedUser());
         sendMessage(socket, responseReconnectMessage);
     }
@@ -326,9 +316,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendDiscoveryMessage(Socket socket) throws IOException {
-        System.out.println("serverSocket:" + serverSocket.getInetAddress().getHostAddress());
-        System.out.println("socket remote address:" + socket.getInetAddress().getHostAddress());
-        System.out.println("socket local address:" + socket.getLocalAddress().getHostAddress());
         ConnectMessage discoveryMessage = new ConnectMessage(serverSocket.getLocalPort(), socket.getLocalAddress().getHostAddress(), user.getUsername(), user.getUserId());
         discoveryMessage.setType(DISCOVERY);
         sendMessage(socket, discoveryMessage);
@@ -342,9 +329,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendResponseDiscoveryMessage(Socket socket) throws IOException {
-        System.out.println("serverSocket:" + serverSocket.getInetAddress().getHostAddress());
-        System.out.println("socket remote address:" + socket.getInetAddress().getHostAddress());
-        System.out.println("socket local address:" + socket.getLocalAddress().getHostAddress());
         ConnectMessage responseDiscoveryMessage = new ConnectMessage(serverSocket.getLocalPort(), socket.getLocalAddress().getHostAddress(), user.getUsername(), user.getUserId());
         responseDiscoveryMessage.setType(RESPONSE_DISCOVERY);
         sendMessage(socket, responseDiscoveryMessage);
@@ -358,9 +342,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     public void sendChangeUsernameMessage(Socket socket) throws IOException {
-        System.out.println("serverSocket:" + serverSocket.getInetAddress().getHostAddress());
-        System.out.println("socket remote address:" + socket.getInetAddress().getHostAddress());
-        System.out.println("socket local address:" + socket.getLocalAddress().getHostAddress());
         ConnectMessage changeUsernameMessage = new ConnectMessage(serverSocket.getLocalPort(), socket.getLocalAddress().getHostAddress(), user.getUsername(), user.getUserId());
         changeUsernameMessage.setType(CHANGE_USERNAME);
         sendMessage(socket, changeUsernameMessage);
@@ -450,7 +431,6 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendMessage(Socket socket, Message message) throws IOException{
-        if(!message.getType().equals(HEARTBEAT))System.out.println("Sending " + message.getType() + " message from " + message.getSender() + " (" + message.getSenderId() + ")");
 
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(message);
@@ -469,7 +449,6 @@ public class NetworkDiscovery {
      * @param sender The user that is connecting to the peer.
      */
     public void connectToPeer(String ipPeer, int portPeer, User sender) {
-        System.out.println(ipPeer + " " + portPeer);
         if(!ipPeer.equals("0.0.0.0") || portPeer!=user.getPort()) {
             int MAX_RETRIES = 5;
             for (int i = 0; i < MAX_RETRIES; i++) {
@@ -488,7 +467,6 @@ public class NetworkDiscovery {
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
-                    System.out.println("peer: " + ipPeer + ":" + portPeer);
                     sendDiscoveryMessage(socket);
                     Map<UUID, Room> rooms = sender.getRooms();
                     for (UUID roomId : rooms.keySet()) {
