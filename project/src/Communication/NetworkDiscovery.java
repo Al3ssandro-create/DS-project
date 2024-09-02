@@ -417,6 +417,7 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendMessage(Socket socket, Message message) throws IOException{
+        if(!message.getType().equals(HEARTBEAT))System.out.println("Sending " + message.getType() + " message to " + message.getSender() + " (" + message.getSenderId() + ")");
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(message);
         out.flush();
