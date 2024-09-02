@@ -179,7 +179,7 @@ public class NetworkDiscovery {
      */
     private void changeUsername(Socket socket) {
         try {
-            sendDiscoveryMessage(socket);
+            sendChangeUsernameMessage(socket);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
