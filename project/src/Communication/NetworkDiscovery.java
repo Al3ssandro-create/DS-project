@@ -43,7 +43,7 @@ public class NetworkDiscovery {
                     break;
                 }
                 Message responseMessage = getMessage(socket);
-                if(responseMessage != null) {
+                if(responseMessage != null && !responseMessage.getSender().equals(user.getUsername())){
                     switch (responseMessage.getType()) {
                         case RESPONSE_RECONNECT:
                             user.setUserId(((ResponseReconnectMessage) responseMessage).getNewUserId());
