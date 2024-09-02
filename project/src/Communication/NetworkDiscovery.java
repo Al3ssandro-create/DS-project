@@ -52,7 +52,7 @@ public class NetworkDiscovery {
                             latch.countDown();
                         case DISCOVERY:
                         case PEER:
-                            System.out.println(responseMessage.getType());
+                            System.out.println(responseMessage.getType() + " message received from " + responseMessage.getSender() + " (" + responseMessage.getSenderId() + ")");
                             String peerUsername = responseMessage.getSender();
                             UUID peerId = responseMessage.getSenderId();
                             int peerPort = ((ConnectMessage) responseMessage).getPort();
@@ -69,7 +69,7 @@ public class NetworkDiscovery {
                                     break;
                                 }
 
-                                if (responseMessage.getType().equals(DISCOVERY)) {
+                                if (responseMessage.getType().equals(DISCOVERY) && !responseMessage.getSender().equals(user.getUsername())){
                                     sendResponseDiscoveryMessage(socket);
                                 }
 
@@ -78,7 +78,7 @@ public class NetworkDiscovery {
                                         sendPeerMessage(peerUser.getUserId(), new ConnectMessage(peerPort, peerAddress, peerUsername, peerId));
                                     }
                                 }
-                            }else if(responseMessage.getType().equals(PEER)){
+                            }else if(responseMessage.getType().equals(PEER) && !responseMessage.getSender().equals(user.getUsername())){
                                 boolean flag = true;
                                 for(User person : user.listPeers()){
                                     if(person.getUsername().equals(peerUsername)){
@@ -99,7 +99,7 @@ public class NetworkDiscovery {
 
                             sendResponseReconnectMessage(socket, handlingUser.getUserId());
                             for (User peerUser : user.listPeers()) {
-                                if (!peerUser.getUserId().equals(handlingUser.getUserId())) {
+                                if (!peerUser.getUserId().equals(handlingUser.getUserId()) && !responseMessage.getSender().equals(user.getUsername())) {
                                     sendPeerReconnectMessage(peerUser.getUserId(), new ConnectMessage(peerPortRe, peerAddressRe, peerUsernameRe, handlingUser.getUserId()));
                                 }
                             }
