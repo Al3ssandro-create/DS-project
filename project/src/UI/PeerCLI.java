@@ -161,10 +161,17 @@ public class PeerCLI {
      * Reconnect or change the username
      * @return 1 if the user wants to reconnect, 2 if the user wants to change the username
      */
-    public static int ReconnectOrChangeUsername(){
+    public synchronized static int ReconnectOrChangeUsername(){
         System.out.println(Color.RED + "Username already in use, where you already connected? (y/n)" + Color.RESET);
         while(true) {
-            String answer = scanner.nextLine();
+            String answer = "";
+            if (scanner.hasNextLine()) {
+               answer = scanner.nextLine();
+                // Process the answer
+            } else {
+                // Handle the situation when no more input is available
+                System.out.println("No more input available");
+            }
             if (answer.equals("y") || answer.equals("Y") || answer.equals("yes") || answer.equals("Yes")) {
                 return 1;
             }else if(answer.equals("n") || answer.equals("N") || answer.equals("no") || answer.equals("No")) {

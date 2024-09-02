@@ -64,7 +64,7 @@ public class NetworkDiscovery {
                                         sendChangeUsernameMessage(socket);
                                         break;
                                     }
-                                }else{
+                                }else if(user.inDisconnected(peerUsername)){
                                     sendChangeUsernameOrReconnectMessage(socket);
                                     break;
                                 }
@@ -74,7 +74,7 @@ public class NetworkDiscovery {
                                 }
 
                                 for (User peerUser : user.listPeers()) {
-                                    if (!peerUser.getUserId().equals(peerId) && !peerUser.getUsername().equals(peerUsername)) {
+                                    if (!peerUser.getUserId().equals(peerId) || !peerUser.getUsername().equals(peerUsername)) {
                                         sendPeerMessage(peerUser.getUserId(), new ConnectMessage(peerPort, peerAddress, peerUsername, peerId));
                                     }
                                 }
