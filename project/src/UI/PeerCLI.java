@@ -46,7 +46,7 @@ public class PeerCLI {
                 System.out.println(Color.BLUE + "Enter the port of a peer to connect to: " + Color.RESET);
                 int portPeer = scanner.nextInt();
                 scanner.nextLine();
-                while(portPeer < 1024 || portPeer > 49151 || portPeer == PORT){
+                while(portPeer < 1024 || portPeer > 49151 || (portPeer == PORT && ipPeer.equals("0.0.0.0"))){
                     System.out.println(Color.RED + "Peer's port must be between 1024 and 49151" + Color.RESET);
                     portPeer = scanner.nextInt();
                     scanner.nextLine();

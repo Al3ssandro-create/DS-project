@@ -52,12 +52,13 @@ public class NetworkDiscovery {
                             latch.countDown();
                         case DISCOVERY:
                         case PEER:
+                            System.out.println(responseMessage.getType());
                             String peerUsername = responseMessage.getSender();
                             UUID peerId = responseMessage.getSenderId();
                             int peerPort = ((ConnectMessage) responseMessage).getPort();
                             String peerAddress = ((ConnectMessage) responseMessage).getIp();
                             if(!userExists(peerId) && !responseMessage.getType().equals(PEER) ) {
-                                if(!user.inDisconnected(peerUsername)){
+                                if(!user.inDisconnected(peerUsername) && !user.getUsername().equals(peerUsername)){
                                     handlingUser = user.addPeer(peerUsername, peerId, peerPort, socket);
                                     if(handlingUser == null) {
                                         sendChangeUsernameMessage(socket);
@@ -73,7 +74,7 @@ public class NetworkDiscovery {
                                 }
 
                                 for (User peerUser : user.listPeers()) {
-                                    if (!peerUser.getUserId().equals(peerId)) {
+                                    if (!peerUser.getUserId().equals(peerId) && !peerUser.getUsername().equals(peerUsername)) {
                                         sendPeerMessage(peerUser.getUserId(), new ConnectMessage(peerPort, peerAddress, peerUsername, peerId));
                                     }
                                 }

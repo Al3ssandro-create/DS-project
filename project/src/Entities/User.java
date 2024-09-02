@@ -215,9 +215,6 @@ public class User {
      * @return the peer if added, null otherwise
      */
     public User addPeer(String peerUsername, UUID peerId, int peerPort, Socket socket) {
-        if(this.username.equals(peerUsername)){
-            return null;
-        }
         for (User user : this.peers) {
             if (user.getUsername().equals(peerUsername)) {
                 return null;
