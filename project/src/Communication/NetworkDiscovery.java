@@ -57,7 +57,7 @@ public class NetworkDiscovery {
                             UUID peerId = responseMessage.getSenderId();
                             int peerPort = ((ConnectMessage) responseMessage).getPort();
                             String peerAddress = ((ConnectMessage) responseMessage).getIp();
-                            if(!userExists(peerId) && !responseMessage.getType().equals(PEER) ) {
+                            if(!userExists(peerId) && !responseMessage.getType().equals(PEER) && !checkInPeer(peerUsername) ) {
                                 if(!user.inDisconnected(peerUsername) && !user.getUsername().equals(peerUsername)){
                                     handlingUser = user.addPeer(peerUsername, peerId, peerPort, socket);
                                     if(handlingUser == null) {
@@ -153,6 +153,21 @@ public class NetworkDiscovery {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Checks if a peer is in the network.
+     * @param PeerUsername The username of the peer to be checked.
+     * @return true if the peer is in the network, false otherwise.
+     */
+    private boolean checkInPeer(String PeerUsername){
+        for(User peer : user.listPeers()){
+            if(peer.getUsername().equals(PeerUsername)){
+                return true;
+            }
+        }
+        return false;
+
     }
 
     /**
@@ -417,10 +432,12 @@ public class NetworkDiscovery {
      * @throws IOException If an input or output exception occurred during the message sending.
      */
     private void sendMessage(Socket socket, Message message) throws IOException{
-        if(!message.getType().equals(HEARTBEAT))System.out.println("Sending " + message.getType() + " message to " + message.getSender() + " (" + message.getSenderId() + ")");
+        if(!message.getType().equals(HEARTBEAT))System.out.println("Sending " + message.getType() + " message from " + message.getSender() + " (" + message.getSenderId() + ")");
+
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(message);
         out.flush();
+
         //out.reset();
     }
 
@@ -434,45 +451,48 @@ public class NetworkDiscovery {
      * @param sender The user that is connecting to the peer.
      */
     public void connectToPeer(String ipPeer, int portPeer, User sender) {
-        int MAX_RETRIES = 5;
-        for(int i = 0; i < MAX_RETRIES; i++) {
-            try {
-                Socket socket = new Socket(ipPeer, portPeer);
-                CountDownLatch latch = new CountDownLatch(1);
-                new Thread(() -> {
+        if(!ipPeer.equals("0.0.0.0") || portPeer!=user.getPort()) {
+            int MAX_RETRIES = 5;
+            for (int i = 0; i < MAX_RETRIES; i++) {
+                try {
+                    Socket socket = new Socket(ipPeer, portPeer);
+                    CountDownLatch latch = new CountDownLatch(1);
+                    new Thread(() -> {
+                        try {
+                            handleIncomingConnection(socket, latch);
+                        } catch (IOException e) {
+                            System.out.println(Color.RED + "Connection crashed" + Color.RESET);
+                        }
+                    }, "handleIncomingConnectionClientSide_").start();
                     try {
-                        handleIncomingConnection(socket,latch);
-                    } catch (IOException e) {
-                        System.out.println(Color.RED + "Connection crashed" + Color.RESET);
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                     }
-                }, "handleIncomingConnectionClientSide_").start();
-                try {
-                    Thread.sleep(1000);
-                }catch (InterruptedException e){
-                    Thread.currentThread().interrupt();
-                }
-                sendDiscoveryMessage(socket);
-                Map<UUID, Room> rooms = sender.getRooms();
-                for(UUID roomId : rooms.keySet()){
-                    sendRoom(rooms.get(roomId), socket);
-                }
-                try{
-                    latch.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                break;
-            } catch (IOException e) {
-                System.out.println(Color.RED + "Connection crashed, retrying discovery..." + Color.RESET);
-                try {
-                    int RETRY_WAIT_TIME = 1000;
-                    Thread.sleep(RETRY_WAIT_TIME); // introduce delay before next retry
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-                if (i == MAX_RETRIES - 1) {
-                    System.out.println(Color.RED + "Failed to reconnect after " + MAX_RETRIES + " attempts, closing client." + Color.RESET);
-                    System.exit(1);
+                    System.out.println("peer: " + ipPeer + ":" + portPeer);
+                    sendDiscoveryMessage(socket);
+                    Map<UUID, Room> rooms = sender.getRooms();
+                    for (UUID roomId : rooms.keySet()) {
+                        sendRoom(rooms.get(roomId), socket);
+                    }
+                    try {
+                        latch.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    break;
+                } catch (IOException e) {
+                    System.out.println(Color.RED + "Connection crashed, retrying discovery..." + Color.RESET);
+                    try {
+                        int RETRY_WAIT_TIME = 1000;
+                        Thread.sleep(RETRY_WAIT_TIME); // introduce delay before next retry
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                    if (i == MAX_RETRIES - 1) {
+                        System.out.println(Color.RED + "Failed to reconnect after " + MAX_RETRIES + " attempts, closing client." + Color.RESET);
+                        System.exit(1);
+                    }
                 }
             }
         }
