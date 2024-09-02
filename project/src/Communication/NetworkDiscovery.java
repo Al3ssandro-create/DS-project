@@ -425,6 +425,7 @@ public class NetworkDiscovery {
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(message);
         out.flush();
+        out.reset();
     }
 
     /**
@@ -543,12 +544,18 @@ public class NetworkDiscovery {
             while (true) {
                 try {
                     Thread.sleep(1000);
-                    sendMessage(peerSocket, new HeartbeatMessage(user.getUsername(), user.getUserId()));
+                    sendMessageHB(peerSocket, new HeartbeatMessage(user.getUsername(), user.getUserId()));
                 } catch (IOException | InterruptedException e) {
                     break;
                 }
             }
         }, "heartbeat_").start();
+    }
+
+    private void sendMessageHB(Socket socket, Message message) throws IOException{
+        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+        out.writeObject(message);
+        out.flush();
     }
 
     /*public void disconnect(Socket peerSocket){
