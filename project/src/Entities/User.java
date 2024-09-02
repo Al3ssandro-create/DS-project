@@ -186,15 +186,6 @@ public class User {
         }
     }
 
-    /*
-     * Close the connection with all the peers
-     * in case of graceful disconnection
-     */
-    /*public void closeConnection(){
-        for(User peer: peers){
-            networkDiscovery.disconnect(peer.getListeningSocket());
-        }
-    }*/
 
     /**
      * Start the connection with a peer

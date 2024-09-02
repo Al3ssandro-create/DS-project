@@ -144,11 +144,6 @@ public class NetworkDiscovery {
                         case DELETE_ROOM:
                             user.deleteRoom(((DeleteRoomMessage) responseMessage).getRoomId());
                             break;
-                        /*case DISCONNECTION:
-                            user.removePeer(responseMessage.getSenderId());
-                            socket.close();
-                            cycle = false;
-                            break;*/
                         default:
                             System.out.println(Color.RED + "Received unknown message type" + Color.RESET);
                             break;
@@ -425,7 +420,7 @@ public class NetworkDiscovery {
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         out.writeObject(message);
         out.flush();
-        out.reset();
+        //out.reset();
     }
 
     /**
@@ -544,7 +539,7 @@ public class NetworkDiscovery {
             while (true) {
                 try {
                     Thread.sleep(1000);
-                    sendMessageHB(peerSocket, new HeartbeatMessage(user.getUsername(), user.getUserId()));
+                    sendMessage(peerSocket, new HeartbeatMessage(user.getUsername(), user.getUserId()));
                 } catch (IOException | InterruptedException e) {
                     break;
                 }
@@ -552,21 +547,6 @@ public class NetworkDiscovery {
         }, "heartbeat_").start();
     }
 
-    private void sendMessageHB(Socket socket, Message message) throws IOException{
-        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-        out.writeObject(message);
-        out.flush();
-    }
 
-    /*public void disconnect(Socket peerSocket){
-        DisconnectMessage message = new DisconnectMessage(user.getUsername(), user.getUserId());
-        try {
-            sendMessage(peerSocket, message);
-            serverSocket.close();
-        }catch (IOException e){
-            e.printStackTrace();
-            System.out.print(Color.RED + "Error in closing the connection" + Color.RESET);
-        }
-    }*/
 
 }
