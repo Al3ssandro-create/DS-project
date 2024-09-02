@@ -440,11 +440,6 @@ public class NetworkDiscovery {
         for(int i = 0; i < MAX_RETRIES; i++) {
             try {
                 Socket socket = new Socket(ipPeer, portPeer);
-                sendDiscoveryMessage(socket);
-                Map<UUID, Room> rooms = sender.getRooms();
-                    for(UUID roomId : rooms.keySet()){
-                        sendRoom(rooms.get(roomId), socket);
-                    }
                 CountDownLatch latch = new CountDownLatch(1);
                 new Thread(() -> {
                     try {
@@ -453,6 +448,16 @@ public class NetworkDiscovery {
                         System.out.println(Color.RED + "Connection crashed" + Color.RESET);
                     }
                 }, "handleIncomingConnectionClientSide_").start();
+                try {
+                    Thread.sleep(1000);
+                }catch (InterruptedException e){
+                    Thread.currentThread().interrupt();
+                }
+                sendDiscoveryMessage(socket);
+                Map<UUID, Room> rooms = sender.getRooms();
+                for(UUID roomId : rooms.keySet()){
+                    sendRoom(rooms.get(roomId), socket);
+                }
                 try{
                     latch.await();
                 } catch (InterruptedException e) {

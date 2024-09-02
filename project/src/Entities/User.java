@@ -300,7 +300,7 @@ public class User {
         actualRoom = room;
     }
 
-    public Set<User> listPeers() {
+    public synchronized Set<User> listPeers() {
         return peers;
     }
 
